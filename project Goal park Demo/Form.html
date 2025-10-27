@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สมัครสมาชิก / เข้าสู่ระบบ - GOAL PARK</title>
+    <link rel="stylesheet" href="Form.css">
+</head>
+<body>
+    <div class="container">
+        <div class="form-wrapper">
+            <div class="logo-section">
+                <div class="logo">
+                    <img src="img/logoGP.svg" alt="Logo" class="logo-icon">
+                    <h1>GOAL PARK</h1>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="tab-container">
+                <button class="tab-btn active" data-tab="login">เข้าสู่ระบบ</button>
+                <button class="tab-btn" data-tab="register">สมัครสมาชิก</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="login-form" class="form-content active">
+                <h2>เข้าสู่ระบบ</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">อีเมล</label>
+                        <input type="email" id="loginEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">รหัสผ่าน</label>
+                        <input type="password" id="loginPassword" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="rememberMe" name="rememberMe">
+                            <span class="checkmark"></span>
+                            จดจำการเข้าสู่ระบบ
+                        </label>
+                    </div>
+                    <button type="submit" class="submit-btn">เข้าสู่ระบบ</button>
+                    <div class="forgot-password">
+                        <a href="#" id="forgotPasswordLink">ลืมรหัสผ่าน?</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" class="form-content">
+                <h2>สมัครสมาชิก</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerName">ชื่อ-นามสกุล</label>
+                        <input type="text" id="registerName" name="fullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">อีเมล</label>
+                        <input type="email" id="registerEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPhone">เบอร์โทรศัพท์</label>
+                        <input type="tel" id="registerPhone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">รหัสผ่าน</label>
+                        <input type="password" id="registerPassword" name="password" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">ยืนยันรหัสผ่าน</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                            <span class="checkmark"></span>
+                            ฉันยอมรับ <a href="#" class="terms-link">ข้อกำหนดการใช้งาน</a>
+                        </label>
+                    </div>
+                    <button type="submit" class="submit-btn">สมัครสมาชิก</button>
+                </form>
+            </div>
+
+            <!-- Message Display -->
+            <div id="message" class="message" style="display: none;"></div>
+
+            <!-- Back to Home -->
+            <div class="back-to-home">
+                <a href="Home.html">← กลับสู่หน้าหลัก</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>กำลังประมวลผล...</p>
+    </div>
+
+    <!-- Include Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="Form.js"></script>
+</body>
+</html>

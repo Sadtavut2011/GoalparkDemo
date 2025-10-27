@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="login2.css" />
+        <link rel="stylesheet" href="Sguidelogin2.css" />
+        <link rel="stylesheet" href="Slogin2.css" />
+    </head>
+    <body>
+        <div class="login">
+            <div class="group">
+                <div class="rectangle"></div>
+                <div class="location">
+                    <p class="text-wrapper">San Kamphaeng District, Chiang Mai 50130</p>
+                    <img class="location-on" src="https://c.animaapp.com/1Cq5Stlb/img/location-on.svg" />
+                    <div class="div">(+66)4 202 1262</div>
+                    <img class="phone" src="https://c.animaapp.com/1Cq5Stlb/img/phone.svg" />
+                    <div class="text-wrapper-2">(+66)5 678 9438</div>
+                    <div class="text-wrapper-3">Sadtavut2011@gmail.com</div>
+                    <img class="img" src="https://c.animaapp.com/1Cq5Stlb/img/phone.svg" />
+                    <img class="mail" src="https://c.animaapp.com/1Cq5Stlb/img/mail.svg" />
+                </div>
+            </div>
+            <div class="rectangle-2"></div>
+            <div class="text-wrapper-4">Football</div>
+            <img class="ellipse" src="img/logoFB.svg" />
+            <div class="action-wrapper">
+                <div class="action">
+                    <div class="rectangle-3"></div>
+                    <select name="province" class="province-select text-wrapper-5" aria-label="เลือกจังหวัด">
+                        <option value="" disabled selected>-เลือกจังหวัด-</option>
+                        <option value="chiangmai">จังหวัดเชียงใหม่</option>
+                        <option value="bangkok">จังหวัดกรุงเทพ</option>
+                        <option value="lamphun">จังหวัดลำพูน</option>
+                    </select>
+                    <div class="rectangle-4"></div>
+                    <div class="group-2">
+                        <img class="line" src="img/line-1.svg" /> <img class="line-2" src="img/line-2.svg" />
+                    </div>
+                </div>
+            </div>
+            <div class="w-district-CNX">
+                <div class="action">
+                    <div class="rectangle-3"></div>
+                    <select name="district" class="district-select text-wrapper-6" aria-label="เลือกอำเภอ" disabled>
+                        <option value="" disabled selected>-เลือกอำเภอ-</option>
+                    </select>
+                    <div class="rectangle-4"></div>
+                    <div class="group-2">
+                        <img class="line" src="img/line-1-2.svg" /> <img class="line-2" src="img/line-2-2.svg" />
+                    </div>
+                </div>
+            </div>
+            <a href="login.html" class="back" style="text-decoration: none; color: inherit;">
+                <div class="building-blocks">
+                    <div class="content">
+                        <div class="state-layer"><img class="icon" src="img/IconBack.svg" /></div>
+                    </div>
+                </div>
+                <div class="text-wrapper-7">กลับ</div>
+            </a>
+            <div class="menu">
+                <div class="rectangle-5"></div>
+                <div class="LOGO">
+                    <div class="text-wrapper-8">GOAL PARK</div>
+                    <img class="vector" src="img/logoGP.svg" />
+                </div>
+                <a href="Home.html" class="text-wrapper-9">log out</a>
+            </div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const provinceSelect = document.querySelector('.province-select');
+                const districtSelect = document.querySelector('.district-select');
+
+                const districts = {
+                    chiangmai: [
+                        { v: 'mueang_chiangmai', t: 'อำเภอเมืองเชียงใหม่' },
+                        { v: 'sankamphaeng', t: 'อำเภอสันกำแพง' },
+                        { v: 'maerim', t: 'อำเภอแม่ริม' }
+                    ],
+                    bangkok: [
+                        { v: 'phra_nakhon', t: 'เขตพระนคร' },
+                        { v: 'bang_kapi', t: 'เขตบางกะปิ' },
+                        { v: 'chatuchak', t: 'เขตจตุจักร' }
+                    ],
+                    lamphun: [
+                        { v: 'mueang_lamphun', t: 'อำเภอเมืองลำพูน' },
+                        { v: 'ban_thi', t: 'อำเภอบ้านธิ' },
+                        { v: 'maetha', t: 'อำเภอแม่ทา' }
+                    ]
+                };
+
+                provinceSelect.addEventListener('change', function () {
+                    const p = this.value;
+                    districtSelect.innerHTML = '<option value="" disabled selected>-เลือกอำเภอ-</option>';
+                    if (districts[p]) {
+                        districts[p].forEach(d => {
+                            const opt = document.createElement('option');
+                            opt.value = d.v; opt.textContent = d.t;
+                            districtSelect.appendChild(opt);
+                        });
+                        districtSelect.disabled = false;
+                    } else {
+                        districtSelect.disabled = true;
+                    }
+                });
+
+                // when district changes, if chiangmai + maerim then redirect to login3.html
+                districtSelect.addEventListener('change', function () {
+                    const selectedProvince = provinceSelect.value;
+                    const selectedDistrict = this.value;
+                    if (selectedProvince === 'chiangmai' && selectedDistrict === 'maerim') {
+                        // ส่งค่าจังหวัดและอำเภอไปยัง login3.html ผ่าน URL parameters
+                        const params = new URLSearchParams({
+                            province: selectedProvince,
+                            district: selectedDistrict
+                        });
+                        window.location.href = `login3.html?${params.toString()}`;
+                    }
+                });
+            });
+        </script>
+        
+        <!-- Include Supabase and User Management -->
+        <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+        <script src="supabase-config.js"></script>
+        <script src="user-manager.js"></script>
+        <script src="booking-history.js"></script>
+        <script src="logout.js"></script>
+        
+        <script>
+            // Initialize booking history when page loads
+            document.addEventListener('DOMContentLoaded', function() {
+                // Create and initialize booking history instance
+                const bookingHistory = new BookingHistory();
+            });
+        </script>
+    </body>
+</html>

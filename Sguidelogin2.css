@@ -1,0 +1,143 @@
+:root {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(79, 55, 138, 0.08);
+}
+
+/*
+
+To enable a theme in your HTML, simply add one of the following data attributes to an HTML element, like so:
+
+<body data-m3-mode="light">
+        <!-- the rest of your content -->
+</body>
+
+You can apply the theme on any DOM node, not just the `body`
+
+*/
+
+[data-m3-mode="light"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(79, 55, 138, 0.08);
+}
+
+[data-m3-mode="light-high-contrast"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(255, 255, 255, 0.08);
+}
+
+[data-m3-mode="light-medium-contrast"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(255, 255, 255, 0.08);
+}
+
+[data-m3-mode="dark"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(234, 221, 255, 0.08);
+}
+
+[data-m3-mode="dark-high-contrast"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(0, 0, 0, 0.08);
+}
+
+[data-m3-mode="dark-medium-contrast"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(0, 0, 0, 0.08);
+}
+
+[data-m3-mode="monochrome-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(255, 255, 255, 0.08);
+}
+
+[data-m3-mode="monochrome-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(0, 0, 0, 0.08);
+}
+
+[data-m3-mode="pink-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(110, 51, 79, 0.08);
+}
+
+[data-m3-mode="pink-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(255, 216, 230, 0.08);
+}
+
+[data-m3-mode="rose-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(114, 50, 63, 0.08);
+}
+
+[data-m3-mode="rose-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(255, 217, 221, 0.08);
+}
+
+[data-m3-mode="red-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(115, 51, 44, 0.08);
+}
+
+[data-m3-mode="red-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(255, 218, 213, 0.08);
+}
+
+[data-m3-mode="orange-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(103, 60, 34, 0.08);
+}
+
+[data-m3-mode="orange-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(255, 219, 201, 0.08);
+}
+
+[data-m3-mode="yellow-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(84, 69, 34, 0.08);
+}
+
+[data-m3-mode="yellow-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(255, 247, 239, 0.08);
+}
+
+[data-m3-mode="chartreuse-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(69, 74, 35, 0.08);
+}
+
+[data-m3-mode="chartreuse-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(223, 233, 149, 0.08);
+}
+
+[data-m3-mode="green-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(45, 78, 48, 0.08);
+}
+
+[data-m3-mode="green-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(183, 241, 185, 0.08);
+}
+
+[data-m3-mode="teal-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(46, 76, 71, 0.08);
+}
+
+[data-m3-mode="teal-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(255, 255, 255, 0.08);
+}
+
+[data-m3-mode="cyan-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(47, 75, 84, 0.08);
+}
+
+[data-m3-mode="cyan-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(255, 255, 255, 0.08);
+}
+
+[data-m3-mode="blue-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(50, 69, 116, 0.08);
+}
+
+[data-m3-mode="blue-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(217, 226, 255, 0.08);
+}
+
+[data-m3-mode="indigo-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(67, 64, 120, 0.08);
+}
+
+[data-m3-mode="indigo-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(227, 223, 255, 0.08);
+}
+
+[data-m3-mode="purple-LT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(82, 60, 114, 0.08);
+}
+
+[data-m3-mode="purple-DT"] {
+    --m3-state-layers-on-primary-container-opacity-08: rgba(237, 220, 255, 0.08);
+}

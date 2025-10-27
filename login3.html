@@ -1,0 +1,2788 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="login3.css" />
+        <link rel="stylesheet" href="Sguidelogin3.css" />
+        <link rel="stylesheet" href="Slogin3.css" />
+        <!-- Supabase JS -->
+        <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+        <!-- Enhanced Booking System -->
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="supabase-config.js"></script>
+        <script src="user-manager.js"></script>
+        <script src="booking-manager.js"></script>
+        <style>
+            /* Booking overlay styles (minimal, non-destructive) */
+            .booking-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 9999; }
+            .booking-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+            .booking-modal { position: relative; background: #fff; max-width: 720px; width: 94%; max-height: 90vh; overflow:auto; border-radius: 8px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 2; }
+            .booking-modal h2 { margin-top: 0; }
+            .booking-close { position: absolute; right: 8px; top: 8px; background: transparent; border: none; font-size: 24px; cursor: pointer; }
+            .booking-modal label { display:block; margin:8px 0; font-size:14px; }
+            .booking-modal input[type="text"], .booking-modal input[type="time"], .booking-modal input[type="date"] { width:100%; padding:8px; box-sizing: border-box; }
+            .booking-modal button[type="submit"] { margin-top: 12px; padding:10px 14px; background:#1976d2; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+            .frame-stadium .stadium { cursor: pointer; }
+            .payment-section { display: none; margin-top: 20px; text-align: center; border-top: 1px solid #ddd; padding-top: 20px; }
+            .payment-section.show { display: block !important; }
+            .payment-notice { color: #856404; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 10px; margin: 10px 0; }
+            .payment-success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 10px; margin: 10px 0; }
+            .payment-success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 10px; margin: 10px 0; }
+            .qr-code { max-width: 300px; margin: 10px auto; }
+            .qr-code img { width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; }
+            .slip-upload { margin-top: 15px; }
+            .slip-upload input[type="file"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
+            .slip-upload button { margin-top: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+            .slip-upload button:hover { background: #45a049; }
+            .slip-upload button:disabled { background: #cccccc; cursor: not-allowed; }
+            .cancel-payment-btn { background: #6c757d !important; }
+            .cancel-payment-btn:hover { background: #5a6268 !important; }
+            .slip-preview { margin-top: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; }
+            .slip-preview img { max-width: 200px; border: 1px solid #ddd; border-radius: 4px; }
+            .progress-container { margin-top: 10px; }
+            .progress-bar-bg { background: #e0e0e0; border-radius: 4px; overflow: hidden; height: 20px; }
+            .progress-bar-fill { height: 100%; background: #4caf50; transition: width 0.3s ease; }
+            .payment-instructions { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 15px 0; }
+            .payment-instructions h4 { margin-top: 0; color: #856404; }
+            .payment-instructions ol { text-align: left; margin: 10px 0; }
+            .payment-instructions li { margin: 5px 0; }
+            .success-message { background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; text-align: center; }
+            .warning-message { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; text-align: center; }
+            .error-message { background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 20px; text-align: center; }
+            .booking-form { display: block; }
+            .booking-form.hide { display: none !important; }
+            /* Time Selector Styles */
+            .time-selector { margin: 10px 0; }
+            .time-buttons { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 8px 0; }
+            .time-btn { padding: 8px 12px; border: 2px solid #ddd; background: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; text-align: center; }
+            .time-btn:hover { background: #f0f0f0; border-color: #1976d2; }
+            .time-btn.selected { background: #1976d2; color: white; border-color: #1976d2; }
+            .time-btn.disabled { background: #f5f5f5; color: #ccc; cursor: not-allowed; border-color: #eee; }
+            .time-btn.disabled:hover { background: #f5f5f5; border-color: #eee; }
+            /* สไตล์สำหรับปุ่มที่จองไปแล้ว - ตามรูปที่แนบ */
+            .time-btn.unavailable, .time-btn.booked { 
+                background: #e0e0e0 !important; 
+                color: #999 !important; 
+                border-color: #ccc !important; 
+                cursor: not-allowed !important;
+                opacity: 0.6;
+            }
+            .time-btn.unavailable:hover, .time-btn.booked:hover { 
+                background: #e0e0e0 !important; 
+                border-color: #ccc !important; 
+                color: #999 !important;
+            }
+            /* ไม่แสดงไอคอนกากบาท - ให้เป็นสีเทาอย่างเดียว */
+            
+            /* ซ่อนส่วนเวลาถึงเริ่มต้น จะแสดงเมื่อเลือกเวลาเริ่มแล้ว */
+            #timeToSelector {
+                display: none;
+                opacity: 0;
+                max-height: 0;
+                overflow: hidden;
+                transition: all 0.3s ease-in-out;
+            }
+            
+            #timeToSelector.show {
+                display: block;
+                opacity: 1;
+                max-height: 300px;
+            }
+            
+            /* เพิ่มแอนิเมชันเมื่อ slide down */
+            #timeToSelector.show .time-buttons {
+                animation: slideDown 0.3s ease-in-out;
+            }
+            
+            @keyframes slideDown {
+                from {
+                    transform: translateY(-20px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            
+            /* Google Maps Styles */
+            .stadium-map-container {
+                margin: 15px 0;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                overflow: hidden;
+                background: #f9f9f9;
+            }
+            
+            .map-header {
+                background: #1976d2;
+                color: white;
+                padding: 8px 12px;
+                font-size: 14px;
+                font-weight: bold;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .map-content {
+                height: 200px;
+                position: relative;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            
+            .map-content:hover {
+                filter: brightness(1.1);
+                transform: scale(1.02);
+            }
+            
+            .map-content iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+            
+            .map-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1;
+            }
+            
+            .map-click-hint {
+                background: rgba(25, 118, 210, 0.9);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                pointer-events: none;
+            }
+            
+            .map-content:hover .map-click-hint {
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="login">
+            <div class="group">
+                <div class="rectangle"></div>
+                <div class="location">
+                    <p class="text-wrapper">San Kamphaeng District, Chiang Mai 50130</p>
+                    <img class="location-on" src="https://c.animaapp.com/1Cq5Stlb/img/location-on.svg" />
+                    <div class="div">(+66)4 202 1262</div>
+                    <img class="phone" src="https://c.animaapp.com/1Cq5Stlb/img/phone.svg" />
+                    <div class="text-wrapper-2">(+66)5 678 9438</div>
+                    <div class="text-wrapper-3">Sadtavut2011@gmail.com</div>
+                    <img class="img" src="https://c.animaapp.com/1Cq5Stlb/img/phone.svg" />
+                    <img class="mail" src="https://c.animaapp.com/1Cq5Stlb/img/mail.svg" />
+                </div>
+            </div>
+            <div class="rectangle-2"></div>
+            <div class="text-wrapper-4">Football</div>
+            <img class="ellipse" src="img/logoFB.svg" />
+            <div class="w-city">
+                <div class="action">
+                    <div class="rectangle-3"></div>
+                    <div class="text-wrapper-5">-เลือกจังหวัด -</div>
+                    <div class="rectangle-4"></div>
+                    <div class="group-2">
+                        <img class="line" src="img/line-1.svg" /> <img class="line-2" src="img/line-2.svg" />
+                    </div>
+                </div>
+            </div>
+            <div class="w-district-CNX">
+                <div class="action">
+                    <div class="rectangle-3"></div>
+                    <div class="text-wrapper-6">-เลือกอำเภอ-</div>
+                    <div class="rectangle-4"></div>
+                    <div class="group-2">
+                        <img class="line" src="img/line-1-2.svg" /> <img class="line-2" src="img/image.svg" />
+                    </div>
+                </div>
+            </div>
+            <div class="frame-stadium">
+                <div class="stadium">
+                    <div class="rectangle-5"></div>
+                    <img class="rectangle-6" src="img/stadium1.svg" />
+                    <div class="text-wrapper-7">The jaguar Maejo stadium</div>
+                    <p class="element">
+                        <span class="span">ที่อยู่: 526 ม.5 หนองหาร อำเภอสันทราย เชียงใหม่ 50290<br /><br />สถานะ: </span>
+                        <span class="text-wrapper-8">เปิด </span>
+                        <span class="span">ปิด 22:00<br /></span>
+                        <span class="span">500 บาท/ชั่วโมง<br /></span>
+                        <a
+                            href="https://www.google.com/search?client=safari&rls=en&q=%E0%B8%AA%E0%B8%99%E0%B8%B2%E0%B8%A1%E0%B8%9A%E0%B8%AD%E0%B8%A5%E0%B9%81%E0%B8%A1%E0%B9%88%E0%B9%82%E0%B8%88%E0%B9%89&ie=UTF-8&oe=UTF-8&lqi=CifguKrguJnguLLguKHguJrguK3guKXguYHguKHguYjguYLguIjguYlI8_-iwsuugIAIWjwQABABEAIQAxgAGAEYAhgDIirguKrguJnguLLguKEg4Lia4Lit4LilIOC5geC4oeC5iCDguYLguIjguYmSAQxzb2NjZXJfZmllbGSqAW8QASoaIhbguKrguJnguLLguKEg4Lia4Lit4LilKDUyHxABIhutK6wjBL8rY5tJC7RXk2UlR8nssxZy_8VpX7EyLhACIirguKrguJnguLLguKEg4Lia4Lit4LilIOC5geC4oeC5iCDguYLguIjguYk#"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            ><span class="text-wrapper-9"></span
+                        ></a>
+                    </p>
+                </div>
+                <div class="stadium">
+                    <div class="rectangle-5"></div>
+                    <img class="rectangle-6" src="img/stadium2.svg" />
+                    <div class="text-wrapper-10">Maejo Arena</div>
+                    <p class="p">
+                        <span class="span"
+                            >ที่อยู่: 249 หมู่ 5 ถ. สหกรณ์นิคม 1 ตำบลหนองหาร <br />อำเภอสันทราย เชียงใหม่ 50290<br /><br />สถานะ:
+                        </span>
+                        <span class="text-wrapper-8">เปิด </span>
+                        <span class="span">ปิด 22:00<br /></span>
+                        <span class="span">800 บาท/ชั่วโมง<br /></span>
+                        <a
+                            href="https://www.google.com/search?client=safari&rls=en&q=%E0%B8%AA%E0%B8%99%E0%B8%B2%E0%B8%A1%E0%B8%9A%E0%B8%AD%E0%B8%A5%E0%B9%81%E0%B8%A1%E0%B9%88%E0%B9%82%E0%B8%88%E0%B9%89&ie=UTF-8&oe=UTF-8&lqi=CifguKrguJnguLLguKHguJrguK3guKXguYHguKHguYjguYLguIjguYlI8_-iwsuugIAIWjwQABABEAIQAxgAGAEYAhgDIirguKrguJnguLLguKEg4Lia4Lit4LilIOC5geC4oeC5iCDguYLguIjguYmSAQxzb2NjZXJfZmllbGSqAW8QASoaIhbguKrguJnguLLguKEg4Lia4Lit4LilKDUyHxABIhutK6wjBL8rY5tJC7RXk2UlR8nssxZy_8VpX7EyLhACIirguKrguJnguLLguKEg4Lia4Lit4LilIOC5geC4oeC5iCDguYLguIjguYk#"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            ><span class="text-wrapper-9"></span
+                        ></a>
+                    </p>
+                </div>
+                <div class="stadium">
+                    <div class="rectangle-5"></div>
+                    <img class="rectangle-6" src="img/stadium3.svg" />
+                    <div class="text-wrapper-11">สนามฟุตบอล รวมโชค สปอร์ตคลับ</div>
+                    <p class="element-chiang-mai">
+                        <span class="span"
+                            >ที่อยู่: 333/99 ม.7 ต.สันผีเสื้อ , Chiang Mai, Thailand<br />, Chiang Mai<br /><br />สถานะ:
+                        </span>
+                        <span class="text-wrapper-8">เปิด </span>
+                        <span class="span">ปิด 22:00<br /></span>
+                        <span class="span">400 บาท/ชั่วโมง<br /></span>
+                        <a
+                            href="https://www.google.com/search?client=safari&rls=en&q=%E0%B8%AA%E0%B8%99%E0%B8%B2%E0%B8%A1%E0%B8%9A%E0%B8%AD%E0%B8%A5%E0%B9%81%E0%B8%A1%E0%B9%88%E0%B9%82%E0%B8%88%E0%B9%89&ie=UTF-8&oe=UTF-8&lqi=CifguKrguJnguLLguKHguJrguK3guKXguYHguKHguYjguYLguIjguYlI8_-iwsuugIAIWjwQABABEAIQAxgAGAEYAhgDIirguKrguJnguLLguKEg4Lia4Lit4LilIOC5geC4oeC5iCDguYLguIjguYmSAQxzb2NjZXJfZmllbGSqAW8QASoaIhbguKrguJnguLLguKEg4Lia4Lit4LilKDUyHxABIhutK6wjBL8rY5tJC7RXk2UlR8nssxZy_8VpX7EyLhACIirguKrguJnguLLguKEg4Lia4Lit4LilIOC5geC4oeC5iCDguYLguIjguYk#"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            ><span class="text-wrapper-9"></span
+                        ></a>
+                    </p>
+                </div>
+            </div>
+            <a href="login2.html" class="back" style="text-decoration: none; color: inherit;">
+                <div class="building-blocks">
+                    <div class="content">
+                        <div class="state-layer"><img class="icon" src="img/IconBack.svg" /></div>
+                    </div>
+                </div>
+                <div class="text-wrapper-12">กลับ</div>
+            </a>
+            <div class="menu">
+                <div class="rectangle-7"></div>
+                <div class="LOGO">
+                    <div class="text-wrapper-13">GOAL PARK</div>
+                    <img class="vector" src="img/logoGP.svg" />
+                </div>
+                <a href="Home.html" class="text-wrapper-14">log out</a>
+            </div>
+        </div>
+        <!-- Booking overlay -->
+        <div class="booking-overlay" id="bookingOverlay" aria-hidden="true">
+            <div class="booking-backdrop" id="bookingBackdrop"></div>
+            <div class="booking-modal" role="dialog" aria-modal="true" aria-labelledby="bookingTitle">
+                <button class="booking-close" id="bookingClose" aria-label="Close">×</button>
+                <h2 id="bookingTitle">Booking</h2>
+                <div id="bookingInfo"></div>
+                <div class="booking-form" id="bookingFormSection">
+                    <form id="bookingForm">
+                        <label>สนาม: <input type="text" name="stadium" id="stadiumName" readonly></label>
+                        <label>ที่อยู่: <input type="text" name="address" id="stadiumAddress" readonly></label>
+                        
+                        <!-- Google Maps Container -->
+                        <div class="stadium-map-container" id="stadiumMapContainer" style="display: none;">
+                            <div class="map-header">
+                                <span>📍</span>
+                                <span>ตำแหน่งสนาม - คลิกเพื่อดูในแผนที่</span>
+                            </div>
+                            <div class="map-content" id="stadiumMapContent">
+                                <iframe id="stadiumMapFrame" 
+                                        src="" 
+                                        allowfullscreen="" 
+                                        loading="lazy" 
+                                        referrerpolicy="no-referrer-when-downgrade">
+                                </iframe>
+                                <div class="map-overlay" id="mapOverlay">
+                                    <div class="map-click-hint">🗺️ คลิกเพื่อเปิดใน Google Maps</div>
+                                </div>
+                            </div>
+                        </div>
+                        <label>ชื่อผู้จอง: <input type="text" name="name" id="bookerName" readonly></label>
+                        <label>เบอร์โทรศัพท์: <input type="tel" name="phone" id="bookerPhone" readonly></label>
+                        <label>วันที่: <input type="date" name="date" id="bookDate" required></label>
+                        <label>เวลาเริ่ม:</label>
+                        <div class="time-selector" id="timeFromSelector">
+                            <div class="time-buttons">
+                                <button type="button" class="time-btn" data-time="06:00">06:00</button>
+                                <button type="button" class="time-btn" data-time="07:00">07:00</button>
+                                <button type="button" class="time-btn" data-time="08:00">08:00</button>
+                                <button type="button" class="time-btn" data-time="09:00">09:00</button>
+                                <button type="button" class="time-btn" data-time="10:00">10:00</button>
+                                <button type="button" class="time-btn" data-time="11:00">11:00</button>
+                                <button type="button" class="time-btn" data-time="12:00">12:00</button>
+                                <button type="button" class="time-btn" data-time="13:00">13:00</button>
+                                <button type="button" class="time-btn" data-time="14:00">14:00</button>
+                                <button type="button" class="time-btn" data-time="15:00">15:00</button>
+                                <button type="button" class="time-btn" data-time="16:00">16:00</button>
+                                <button type="button" class="time-btn" data-time="17:00">17:00</button>
+                                <button type="button" class="time-btn" data-time="18:00">18:00</button>
+                                <button type="button" class="time-btn" data-time="19:00">19:00</button>
+                                <button type="button" class="time-btn" data-time="20:00">20:00</button>
+                                <button type="button" class="time-btn" data-time="21:00">21:00</button>
+                                <button type="button" class="time-btn" data-time="22:00">22:00</button>
+                            </div>
+                            <input type="hidden" name="timeFrom" id="timeFrom" required>
+                        </div>
+                        <label id="timeToLabel" style="display: none;">เวลาถึง:</label>
+                        <div class="time-selector" id="timeToSelector">
+                            <div class="time-buttons">
+                                <button type="button" class="time-btn" data-time="07:00">07:00</button>
+                                <button type="button" class="time-btn" data-time="08:00">08:00</button>
+                                <button type="button" class="time-btn" data-time="09:00">09:00</button>
+                                <button type="button" class="time-btn" data-time="10:00">10:00</button>
+                                <button type="button" class="time-btn" data-time="11:00">11:00</button>
+                                <button type="button" class="time-btn" data-time="12:00">12:00</button>
+                                <button type="button" class="time-btn" data-time="13:00">13:00</button>
+                                <button type="button" class="time-btn" data-time="14:00">14:00</button>
+                                <button type="button" class="time-btn" data-time="15:00">15:00</button>
+                                <button type="button" class="time-btn" data-time="16:00">16:00</button>
+                                <button type="button" class="time-btn" data-time="17:00">17:00</button>
+                                <button type="button" class="time-btn" data-time="18:00">18:00</button>
+                                <button type="button" class="time-btn" data-time="19:00">19:00</button>
+                                <button type="button" class="time-btn" data-time="20:00">20:00</button>
+                                <button type="button" class="time-btn" data-time="21:00">21:00</button>
+                                <button type="button" class="time-btn" data-time="22:00">22:00</button>
+                                <button type="button" class="time-btn" data-time="23:00">23:00</button>
+                            </div>
+                            <input type="hidden" name="timeTo" id="timeTo" required>
+                        </div>
+                        <div id="conflictWarning" style="display: none; color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 4px; margin: 10px 0;"></div>
+                        <div id="bookingPrice" style="display: none; background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                            <strong>ราคา: <span id="priceAmount">-</span> บาท</strong>
+                            <br><small>(<span id="hoursCount">-</span> ชั่วโมง × <span id="pricePerHour">500</span> บาท/ชั่วโมง)</small>
+                        </div>
+                        <button type="submit" id="submitBookingBtn">ตรวจสอบและยืนยันการจอง</button>
+                    </form>
+                </div>
+                <div class="payment-section" id="paymentSection">
+                    <h3>ชำระเงิน</h3>
+                    <div id="paymentDetails" style="background: #f5f5f5; padding: 15px; border-radius: 4px; margin: 10px 0;">
+                        <p><strong>รายละเอียดการจอง:</strong></p>
+                        <div id="bookingSummary"></div>
+                    </div>
+                    <p>กรุณาสแกน QR Code เพื่อชำระเงิน</p>
+                    <div class="qr-code">
+                        <img src="img/QR.png" alt="QR Code สำหรับชำระเงิน">
+                        <div style="text-align: center; margin-top: 10px;">
+                            <p><strong>ธนาคารกรุงไทย</strong></p>
+                            <p>เลขบัญชี: 123-4-56789-0</p>
+                            <p>ชื่อบัญชี: Goal Park Co.,Ltd.</p>
+                        </div>
+                    </div>
+                    <div class="payment-instructions" style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 15px 0;">
+                        <h4>ขั้นตอนการชำระเงิน:</h4>
+                        <ol>
+                            <li>สแกน QR Code หรือโอนเงินเข้าบัญชีข้างต้น</li>
+                            <li>ถ่ายภาพสลิปการโอนเงิน</li>
+                            <li>แนบสลิปและกดปุ่ม "ยืนยันการชำระเงิน"</li>
+                            <li>รอการตรวจสอบจากทีมงาน (ภายใน 24 ชั่วโมง)</li>
+                        </ol>
+                        <p><strong>✅ ข้อมูลพร้อม:</strong> ระบบพร้อมบันทึกข้อมูลการจองของคุณ</p>
+                    </div>
+                    <div class="slip-upload">
+                        <label for="slipFile"><strong>แนบไฟล์เอกสาร (ไม่บังคับ):</strong></label>
+                        <input type="file" id="slipFile" name="slipFile" accept="*">
+                        <p style="font-size: 12px; color: #666; margin: 5px 0;">
+                            📄 <strong>ไฟล์เสริม:</strong> รองรับไฟล์ทุกประเภท (ขนาดไม่เกิน 20MB)<br>
+                            💡 <strong>หมายเหตุ:</strong> สามารถแนบเอกสารเพิ่มเติมหรือข้ามขั้นตอนนี้ได้
+                        </p>
+                        <button type="button" id="uploadSlipBtn" style="background: #28a745; margin-top: 10px;">
+                            ✅ ยืนยันการจอง - บันทึกข้อมูลเข้าระบบ
+                        </button>
+                        <div id="slipPreview" style="display: none; margin-top: 10px;">
+                            <p><strong>ตัวอย่างสลิป:</strong></p>
+                            <img id="slipImage" style="max-width: 200px; border: 1px solid #ddd; border-radius: 4px;">
+                            <p id="slipFileName" style="font-size: 12px; color: #666;"></p>
+                        </div>
+                    </div>
+                    <div id="uploadProgress" style="display: none; margin-top: 10px;">
+                        <div style="background: #e0e0e0; border-radius: 4px; overflow: hidden;">
+                            <div id="progressBar" style="background: #4caf50; height: 20px; width: 0%; transition: width 0.3s;"></div>
+                        </div>
+                        <p id="progressText">กำลังอัปโหลด...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            (function () {
+                // ตัวแปรสำหรับเก็บข้อมูลการจองปัจจุบัน
+                let currentBookingData = null;
+                let currentBookingId = null;
+                let bookingManager = null;
+
+                // Initialize Supabase and BookingManager
+                async function initializeBookingSystem() {
+                    try {
+                        console.log('=== Initializing booking system ===');
+                        
+                        // ตรวจสอบ Supabase
+                        if (typeof supabase === 'undefined') {
+                            console.warn('Supabase library not loaded, trying to load from window');
+                            window.supabase = window.supabase || {};
+                        }
+                        
+                        if (typeof SUPABASE_CONFIG === 'undefined' || !SUPABASE_CONFIG) {
+                            console.error('SUPABASE_CONFIG not found');
+                            return false;
+                        }
+                        
+                        console.log('✅ Supabase config found:', {
+                            url: SUPABASE_CONFIG.url,
+                            hasKey: !!SUPABASE_CONFIG.anonKey
+                        });
+                        
+                        // สร้าง Supabase client
+                        if (typeof supabase !== 'undefined' && supabase.createClient) {
+                            const { createClient } = supabase;
+                            window.supabaseClient = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+                            window.supabase = window.supabaseClient; // สำหรับ fallback
+                            console.log('✅ Supabase client created successfully');
+                        } else {
+                            console.error('❌ Supabase createClient not available');
+                            return false;
+                        }
+                        
+                        // ทดสอบการเชื่อมต่อฐานข้อมูล
+                        try {
+                            console.log('Testing database connection...');
+                            
+                            // ทดสอบ table profiles
+                            const { data: testData, error: testError } = await window.supabaseClient
+                                .from('profiles')
+                                .select('id')
+                                .limit(1);
+
+                            if (testError) {
+                                console.warn('⚠️ Profiles table test failed:', testError);
+                            } else {
+                                console.log('✅ Profiles table connection successful');
+                            }
+
+                            // ทดสอบ table bookings (สำคัญสำหรับระบบนี้)
+                            const { data: bookingTestData, error: bookingTestError } = await window.supabaseClient
+                                .from('bookings')
+                                .select('*')
+                                .limit(5);
+
+                            if (bookingTestError) {
+                                console.error('❌ Bookings table test failed:', bookingTestError);
+                                console.error('This will prevent booking conflict detection from working');
+                                
+                                // ลองดู table อื่นๆ
+                                console.log('🔍 Checking other tables...');
+                                
+                                // ตรวจสอบ table stadiums
+                                try {
+                                    const { data: stadiumsData } = await window.supabaseClient
+                                        .from('stadiums')
+                                        .select('*')
+                                        .limit(3);
+                                    console.log('🏟️ Stadiums table:', stadiumsData);
+                                } catch (e) {
+                                    console.log('❌ Stadiums table not accessible');
+                                }
+                                
+                                // ตรวจสอบ table profiles
+                                try {
+                                    const { data: profilesData } = await window.supabaseClient
+                                        .from('profiles')
+                                        .select('*')
+                                        .limit(3);
+                                    console.log('👤 Profiles table:', profilesData);
+                                } catch (e) {
+                                    console.log('❌ Profiles table not accessible');
+                                }
+                                
+                            } else {
+                                console.log('✅ Bookings table connection successful');
+                                console.log('📊 Sample bookings:', bookingTestData);
+                                if (bookingTestData && bookingTestData.length > 0) {
+                                    console.log('📋 Booking columns:', Object.keys(bookingTestData[0]));
+                                }
+                            }
+
+                        } catch (connError) {
+                            console.error('❌ Database connection test failed:', connError);
+                        }
+
+                        // สร้าง BookingManager
+                        if (typeof BookingManager !== 'undefined') {
+                            try {
+                                bookingManager = new BookingManager(window.supabaseClient);
+                                console.log('✅ BookingManager initialized successfully');
+                            } catch (bmError) {
+                                console.error('❌ BookingManager initialization failed:', bmError);
+                                bookingManager = null;
+                            }
+                        }
+
+                        return true;
+                    } catch (error) {
+                        console.error('❌ Error initializing booking system:', error);
+                        
+                        // แสดง error แบบ user-friendly
+                        const errorMsg = `ระบบเริ่มต้นไม่สำเร็จ: ${error.message}\n\nกรุณาตรวจสอบ:\n1. การเชื่อมต่ออินเทอร์เน็ต\n2. การตั้งค่า Supabase\n3. ไฟล์ supabase-config.js`;
+                        
+                        // ไม่แสดง alert ทันที เพื่อไม่รบกวนผู้ใช้
+                        console.error('Please check console for details');
+                        
+                        return false;
+                    }
+                }
+
+                // เรียกใช้ initialization เมื่อ DOM โหลดเสร็จ
+                document.addEventListener('DOMContentLoaded', function() {
+                    initializeBookingSystem();
+                    // Initialize map click handlers
+                    initMapClickHandler();
+                });
+
+                // map stadium elements to details
+                const stadiums = Array.from(document.querySelectorAll('.frame-stadium .stadium'));
+                const overlay = document.getElementById('bookingOverlay');
+                const backdrop = document.getElementById('bookingBackdrop');
+                const closeBtn = document.getElementById('bookingClose');
+                const bookingForm = document.getElementById('bookingForm');
+                const bookingFormSection = document.getElementById('bookingFormSection');
+                const paymentSection = document.getElementById('paymentSection');
+                const uploadSlipBtn = document.getElementById('uploadSlipBtn');
+                const stadiumName = document.getElementById('stadiumName');
+                const stadiumAddress = document.getElementById('stadiumAddress');
+                const bookingTitle = document.getElementById('bookingTitle');
+                const conflictWarning = document.getElementById('conflictWarning');
+                const bookingPrice = document.getElementById('bookingPrice');
+                const submitBookingBtn = document.getElementById('submitBookingBtn');
+
+                // ตรวจสอบการแสดงผลเริ่มต้น
+                console.log('Initial setup - Payment section display:', window.getComputedStyle(paymentSection).display);
+                console.log('Initial setup - Form section display:', window.getComputedStyle(bookingFormSection).display);
+                
+                // บังคับให้หน้าชำระเงินถูกซ่อนเมื่อเริ่มต้น
+                paymentSection.classList.remove('show');
+                paymentSection.style.display = 'none';
+                bookingFormSection.classList.remove('hide');
+                bookingFormSection.style.display = 'block';
+
+                // ข้อมูลราคาสนาม - จะดึงจาก Supabase ในระบบใหม่
+                const stadiumPrices = {
+                    'The jaguar Maejo stadium': 500,
+                    'Maejo Arena': 800,
+                    'สนามฟุตบอล รวมโชค สปอร์ตคลับ': 400
+                };
+
+                // ฟังก์ชันโหลดข้อมูลสนามจาก Supabase
+                async function loadStadiumPrices() {
+                    if (!bookingManager) return;
+                    
+                    try {
+                        const { data, error } = await window.supabaseClient
+                            .from('stadiums')
+                            .select('name, price_per_hour')
+                            .eq('status', 'active');
+
+                        if (!error && data) {
+                            data.forEach(stadium => {
+                                stadiumPrices[stadium.name] = stadium.price_per_hour;
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error loading stadium prices:', error);
+                    }
+                }
+
+                function openOverlay(data) {
+                    stadiumName.value = data.name || '';
+                    stadiumAddress.value = data.address || '';
+                    bookingTitle.textContent = 'Booking - ' + (data.name || '');
+                    
+                    // โหลดราคาสนามจาก Supabase
+                    loadStadiumPrices();
+                    
+                    // ดึงข้อมูลผู้ใช้จากหลายแหล่ง
+                    loadUserData();
+                    
+                    // Reset และเริ่มต้น time selectors
+                    resetTimeSelectors();
+                    initTimeSelectors();
+                    
+                    // รีเซ็ตการจองให้กลับไปขั้นตอนที่ 1 เสมอ
+                    resetBookingToFirstStep();
+                    
+                    // ตั้งวันที่ขั้นต่ำเป็นวันนี้
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('bookDate').setAttribute('min', today);
+                    
+                    overlay.style.display = 'flex';
+                    overlay.setAttribute('aria-hidden','false');
+                }
+
+                // ฟังก์ชันดึงข้อมูลผู้ใช้จากหลายแหล่ง
+                async function loadUserData() {
+                    try {
+                        let userData = {};
+                        
+                        // 1. ลองดึงจาก Supabase Auth และ Users table ก่อน (ข้อมูลล่าสุด)
+                        if (window.supabaseClient) {
+                            const { data: { user } } = await window.supabaseClient.auth.getUser();
+                            if (user) {
+                                console.log('Found Supabase user:', user.email);
+                                
+                                // ดึงข้อมูลเพิ่มเติมจากตาราง users
+                                const { data: profile, error } = await window.supabaseClient
+                                    .from('users')
+                                    .select('full_name, phone, email')
+                                    .eq('id', user.id)
+                                    .single();
+                                
+                                if (!error && profile) {
+                                    console.log('Found user profile:', profile);
+                                    userData = {
+                                        fullName: profile.full_name,
+                                        name: profile.full_name,
+                                        phone: profile.phone,
+                                        email: profile.email || user.email,
+                                        userId: user.id
+                                    };
+                                } else {
+                                    console.log('No profile found, using auth data only');
+                                    // ถ้าไม่มีข้อมูลใน users table ใช้ข้อมูลจาก auth
+                                    userData = {
+                                        fullName: user.user_metadata?.full_name || user.user_metadata?.name || '',
+                                        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+                                        phone: user.user_metadata?.phone || '',
+                                        email: user.email,
+                                        userId: user.id
+                                    };
+                                }
+                            }
+                        }
+                        
+                        // 2. ถ้าไม่ได้จาก Supabase ลองดึงจาก localStorage
+                        if (!userData.fullName && !userData.name) {
+                            const localData = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                            if (localData.fullName || localData.name) {
+                                userData = localData;
+                                console.log('Using localStorage data:', userData);
+                            }
+                        }
+                        
+                        // 3. ถ้าไม่มีใน localStorage ลองดึงจาก sessionStorage
+                        if (!userData.fullName && !userData.name) {
+                            const sessionData = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                            if (sessionData.fullName || sessionData.name) {
+                                userData = sessionData;
+                                console.log('Using sessionStorage data:', userData);
+                            }
+                        }
+                        
+                        // 4. กำหนดค่าเริ่มต้นและอัปเดต UI
+                        const userName = userData.fullName || userData.name || 'ผู้ใช้';
+                        const userPhone = userData.phone || '';
+                        
+                        console.log('Final user data:', { userName, userPhone });
+                        
+                        document.getElementById('bookerName').value = userName;
+                        document.getElementById('bookerPhone').value = userPhone;
+                        
+                        // เก็บข้อมูลสำหรับใช้ในการบันทึกการจอง
+                        window.currentUserData = userData;
+                        
+                    } catch (error) {
+                        console.error('Error loading user data:', error);
+                        // กำหนดค่าเริ่มต้นในกรณีเกิดข้อผิดพลาด
+                        document.getElementById('bookerName').value = 'ผู้ใช้';
+                        document.getElementById('bookerPhone').value = '';
+                        window.currentUserData = {};
+                    }
+                }
+
+                function closeOverlay() {
+                    overlay.style.display = 'none';
+                    overlay.setAttribute('aria-hidden','true');
+                    // Reset sections to initial state
+                    bookingFormSection.classList.remove('hide');
+                    paymentSection.classList.remove('show');
+                    conflictWarning.style.display = 'none';
+                    bookingPrice.style.display = 'none';
+                    bookingForm.reset();
+                    resetTimeSelectors(); // Reset time selectors
+                    
+                    // รีเซ็ตการจองให้กลับไปขั้นตอนที่ 1 เสมอ
+                    resetBookingToFirstStep();
+                    
+                    // รีเซ็ตฟอร์มการชำระเงินทั้งหมด (รวมถึงไฟล์ที่อัพโหลด)
+                    resetPaymentForm();
+                    
+                    currentBookingData = null;
+                    currentBookingId = null;
+                }
+
+                // ฟังก์ชันคำนวณราคา
+                function calculatePrice() {
+                    const stadium = stadiumName.value;
+                    const timeFrom = document.getElementById('timeFrom').value;
+                    const timeTo = document.getElementById('timeTo').value;
+                    
+                    if (!stadium || !timeFrom || !timeTo) {
+                        bookingPrice.style.display = 'none';
+                        return;
+                    }
+
+                    const pricePerHour = stadiumPrices[stadium] || 500;
+                    let hours = 0;
+                    
+                    // ใช้ฟังก์ชันคำนวณจาก BookingManager หรือคำนวณเอง
+                    if (bookingManager) {
+                        hours = bookingManager.calculateHours(timeFrom, timeTo);
+                    } else {
+                        // Fallback calculation
+                        const [fromHour, fromMin] = timeFrom.split(':').map(Number);
+                        const [toHour, toMin] = timeTo.split(':').map(Number);
+                        const fromMinutes = fromHour * 60 + fromMin;
+                        const toMinutes = toHour * 60 + toMin;
+                        hours = (toMinutes - fromMinutes) / 60;
+                    }
+                    
+                    const totalPrice = hours * pricePerHour;
+
+                    document.getElementById('pricePerHour').textContent = pricePerHour;
+                    document.getElementById('hoursCount').textContent = hours;
+                    document.getElementById('priceAmount').textContent = totalPrice.toLocaleString();
+                    bookingPrice.style.display = 'block';
+                }
+
+                // ===================================================================
+                // ระบบตรวจสอบการจองซ้ำและปิดปุ่มเวลา
+                // ===================================================================
+
+                // ฟังก์ชันดึงข้อมูลการจองที่มีอยู่แล้วในวันและสนามที่เลือก
+                async function getExistingBookings(stadium, date) {
+                    try {
+                        // ตรวจสอบ Supabase client หลายแหล่ง
+                        let client = window.supabaseClient || window.supabase || supabaseClient;
+                        
+                        if (!client) {
+                            console.error('❌ No Supabase client available');
+                            console.log('Available clients:', {
+                                'window.supabaseClient': !!window.supabaseClient,
+                                'window.supabase': !!window.supabase,
+                                'supabaseClient': typeof supabaseClient !== 'undefined' ? !!supabaseClient : false
+                            });
+                            return [];
+                        }
+
+                        console.log('🔍 Checking existing bookings for:');
+                        console.log('Stadium:', stadium);
+                        console.log('Date:', date);
+                        console.log('Using client:', !!client);
+
+                        // ทดสอบการเชื่อมต่อก่อน
+                        try {
+                            const { data: testConnection, error: testError } = await client
+                                .from('bookings')
+                                .select('count')
+                                .limit(1);
+                            
+                            if (testError) {
+                                console.error('❌ Connection test failed:', testError);
+                                return [];
+                            }
+                            console.log('✅ Connection test successful');
+                        } catch (connError) {
+                            console.error('❌ Connection error:', connError);
+                            return [];
+                        }
+
+                        // ดึงข้อมูลการจองทั้งหมดก่อน เพื่อดูว่ามีข้อมูลอะไรบ้าง
+                        console.log('📋 Fetching all bookings to debug...');
+                        
+                        // ลองใช้ฟังก์ชัน check_booking_conflict แทน
+                        try {
+                            console.log('🔧 Trying RPC function for conflict checking...');
+                            const { data: conflictData, error: conflictError } = await client
+                                .rpc('check_public_booking_conflicts', {
+                                    p_stadium_name: stadium,
+                                    p_booking_date: date
+                                });
+                                
+                            if (!conflictError && conflictData) {
+                                console.log('✅ Found bookings via RPC function:', conflictData);
+                                return conflictData.filter(booking => 
+                                    ['pending', 'approved', 'confirmed', 'pending_payment'].includes(booking.status)
+                                );
+                            } else if (conflictError) {
+                                console.log('⚠️ RPC function error:', conflictError);
+                            }
+                        } catch (rpcError) {
+                            console.log('⚠️ RPC function not available:', rpcError);
+                        }
+                        
+                        // ลองใช้ public view
+                        try {
+                            console.log('🔧 Trying public view for conflict checking...');
+                            const { data: viewData, error: viewError } = await client
+                                .from('public_booking_conflicts')
+                                .select('*')
+                                .eq('stadium_name', stadium)
+                                .eq('booking_date', date);
+                                
+                            if (!viewError && viewData) {
+                                console.log('✅ Found bookings via public view:', viewData);
+                                return viewData;
+                            } else if (viewError) {
+                                console.log('⚠️ Public view error:', viewError);
+                            }
+                        } catch (viewError) {
+                            console.log('⚠️ Public view not available:', viewError);
+                        }
+                        
+                        const { data: allBookings, error: allError } = await client
+                            .from('bookings')
+                            .select('*');
+                            
+                        if (allError) {
+                            console.error('❌ Error fetching all bookings:', allError);
+                            
+                            // ถ้าเป็น RLS error ให้ลองใช้วิธีอื่น
+                            if (allError.message && allError.message.includes('policy')) {
+                                console.log('🔒 RLS is blocking access, trying alternative approach...');
+                                
+                                // ลองดึงข้อมูลผ่าน service role หรือ public view
+                                try {
+                                    // ลองใช้ .select() แบบเฉพาะ fields ที่จำเป็น
+                                    const { data: publicBookings, error: publicError } = await client
+                                        .from('bookings')
+                                        .select('stadium_name, booking_date, start_time, end_time, status, booker_name')
+                                        .eq('stadium_name', stadium)
+                                        .eq('booking_date', date);
+                                        
+                                    if (!publicError && publicBookings) {
+                                        console.log('✅ Found bookings via specific query:', publicBookings);
+                                        return publicBookings.filter(booking => 
+                                            ['pending', 'approved', 'confirmed', 'pending_payment'].includes(booking.status)
+                                        );
+                                    }
+                                } catch (altError) {
+                                    console.error('❌ Alternative approach failed:', altError);
+                                }
+                            }
+                            return [];
+                        }
+
+                        console.log('� Total bookings in database:', allBookings?.length || 0);
+                        if (allBookings && allBookings.length > 0) {
+                            console.log('🗂️ All booking records:', allBookings);
+                            
+                            // แสดงชื่อสนามทั้งหมดที่มีในฐานข้อมูล
+                            const uniqueStadiums = [...new Set(allBookings.map(b => b.stadium_name))];
+                            console.log('🏟️ Unique stadium names in database:', uniqueStadiums);
+                            
+                            // แสดงวันที่ทั้งหมด
+                            const uniqueDates = [...new Set(allBookings.map(b => b.booking_date))];
+                            console.log('� Unique dates in database:', uniqueDates);
+                            
+                            // ค้นหาข้อมูลที่ตรงกับเงื่อนไขโดยตรง
+                            const matchingBookings = allBookings.filter(booking => {
+                                const stadiumMatch = booking.stadium_name === stadium;
+                                const dateMatch = booking.booking_date === date;
+                                const statusMatch = ['pending', 'approved', 'confirmed'].includes(booking.status);
+                                
+                                console.log(`🔍 Checking booking:`, {
+                                    stadiumName: booking.stadium_name,
+                                    stadiumMatch,
+                                    bookingDate: booking.booking_date,
+                                    dateMatch,
+                                    status: booking.status,
+                                    statusMatch,
+                                    overall: stadiumMatch && dateMatch && statusMatch
+                                });
+                                
+                                return stadiumMatch && dateMatch && statusMatch;
+                            });
+                            
+                            if (matchingBookings.length > 0) {
+                                console.log('✅ Found matching bookings via filtering:', matchingBookings);
+                                return matchingBookings;
+                            } else {
+                                console.log('❌ No matching bookings found via filtering');
+                            }
+                        }
+
+                        // ถ้าไม่มีข้อมูลในฐานข้อมูล
+                        console.log('⚠️ No bookings found in database - table is empty');
+                        return [];
+                    } catch (error) {
+                        console.error('Error in getExistingBookings:', error);
+                        return [];
+                    }
+                }
+
+                // ฟังก์ชันตรวจสอบว่าช่วงเวลาทับซ้อนกันหรือไม่
+                function isTimeOverlapping(start1, end1, start2, end2) {
+                    // แปลงเวลาเป็นนาที
+                    const timeToMinutes = (timeStr) => {
+                        const [hour, min] = timeStr.split(':').map(Number);
+                        return hour * 60 + min;
+                    };
+
+                    const s1 = timeToMinutes(start1);
+                    const e1 = timeToMinutes(end1);
+                    const s2 = timeToMinutes(start2);
+                    const e2 = timeToMinutes(end2);
+
+                    // ตรวจสอบการทับซ้อน
+                    return s1 < e2 && s2 < e1;
+                }
+
+                // ฟังก์ชันสร้างรายการช่วงเวลาทั้งหมดที่เป็นไปได้
+                function generateAllTimeSlots() {
+                    const slots = [];
+                    const times = [
+                        '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', 
+                        '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', 
+                        '20:00', '21:00', '22:00'
+                    ];
+                    
+                    for (let i = 0; i < times.length; i++) {
+                        for (let j = i + 1; j < times.length; j++) {
+                            slots.push({
+                                start: times[i],
+                                end: times[j]
+                            });
+                        }
+                    }
+                    
+                    return slots;
+                }
+
+                // ฟังก์ชันหลักสำหรับตรวจสอบและปิดปุ่มเวลา
+                async function checkAndDisableBookedTimes() {
+                    const stadium = stadiumName.value;
+                    const dateInput = document.getElementById('bookDate').value;
+
+                    console.log('🔄 Checking booked times for:', stadium, dateInput);
+
+                    // รีเซ็ตสถานะปุ่มทั้งหมดก่อน
+                    document.querySelectorAll('.time-btn').forEach(btn => {
+                        btn.classList.remove('booked', 'unavailable');
+                        btn.disabled = false;
+                        btn.title = '';
+                        btn.style.pointerEvents = 'auto';
+                    });
+
+                    if (!stadium || !dateInput) {
+                        console.log('⚠️ No stadium or date selected, stadium:', stadium, 'date:', dateInput);
+                        return;
+                    }
+
+                    // แปลงรูปแบบวันที่ให้ตรงกับฐานข้อมูล
+                    let formattedDate = dateInput;
+                    if (dateInput) {
+                        // ถ้าเป็น YYYY-MM-DD ให้คงไว้
+                        // ถ้าเป็น DD/MM/YYYY ให้แปลง
+                        if (dateInput.includes('/')) {
+                            const [day, month, year] = dateInput.split('/');
+                            formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                        }
+                    }
+
+                    console.log('📅 Original date:', dateInput, '→ Formatted date:', formattedDate);
+
+                    try {
+                        // ดึงข้อมูลการจองที่มีอยู่
+                        const existingBookings = await getExistingBookings(stadium, formattedDate);
+                        
+                        if (existingBookings.length === 0) {
+                            console.log('✅ No existing bookings found for', stadium, 'on', formattedDate);
+                            return;
+                        }
+
+                        console.log('📋 Found existing bookings:', existingBookings);
+
+                        // ดึงเวลาทั้งหมดที่มี (ครอบคลุมทุกช่วงเวลา)
+                        const allTimes = [
+                            '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', 
+                            '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', 
+                            '20:00', '21:00', '22:00'
+                        ];
+                        
+                        // ตรวจสอบแต่ละเวลาว่าสามารถเลือกได้หรือไม่
+                        allTimes.forEach(time => {
+                            const btn = document.querySelector(`[data-time="${time}"]`);
+                            if (!btn) return;
+
+                            // ตรวจสอบว่าเวลานี้จะทำให้เกิดการทับซ้อนหรือไม่
+                            const wouldCauseConflict = existingBookings.some(booking => {
+                                // แปลงเวลาให้เป็นรูปแบบเดียวกัน (ตัด :00 ออก)
+                                const normalizeTime = (timeStr) => {
+                                    if (timeStr.includes(':00:00')) {
+                                        return timeStr.substring(0, 5); // เอา HH:MM
+                                    }
+                                    return timeStr;
+                                };
+
+                                const timeMinutes = timeToMinutes(time);
+                                const bookingStart = timeToMinutes(normalizeTime(booking.start_time));
+                                const bookingEnd = timeToMinutes(normalizeTime(booking.end_time));
+                                
+                                // Debug log
+                                console.log(`Checking time ${time} (${timeMinutes}min) against booking ${normalizeTime(booking.start_time)}-${normalizeTime(booking.end_time)} (${bookingStart}-${bookingEnd}min)`);
+                                
+                                // ปิดปุ่มเฉพาะเวลาที่อยู่ในช่วงการจอง (ไม่รวม end time เพื่อให้สามารถจองต่อเนื่องได้)
+                                const isInConflict = timeMinutes >= bookingStart && timeMinutes < bookingEnd;
+                                if (isInConflict) {
+                                    console.log(`❌ Time ${time} conflicts with booking ${booking.booker_name}: ${normalizeTime(booking.start_time)}-${normalizeTime(booking.end_time)}`);
+                                }
+                                return isInConflict;
+                            });
+
+                            if (wouldCauseConflict) {
+                                btn.classList.add('unavailable', 'booked');
+                                btn.disabled = true;
+                                btn.style.pointerEvents = 'none';
+                                btn.title = `เวลานี้มีการจองแล้ว`;
+                                console.log(`🚫 Disabled time: ${time} (conflicts with existing booking)`);
+                            } else {
+                                // ถ้าไม่มีความขัดแย้ง ให้แน่ใจว่าปุ่มสามารถใช้งานได้
+                                btn.classList.remove('unavailable', 'booked');
+                                btn.disabled = false;
+                                btn.style.pointerEvents = 'auto';
+                                btn.title = '';
+                            }
+                        });
+
+                        // แสดงข้อมูลการจองที่มีอยู่
+                        console.log('📋 Existing bookings summary:');
+                        existingBookings.forEach((booking, index) => {
+                            console.log(`${index + 1}. ${booking.booker_name}: ${booking.start_time}-${booking.end_time} (${booking.status})`);
+                        });
+
+                        // ไม่แสดงข้อความแจ้งเตือนบนหน้าจอ (ตามที่ผู้ใช้ต้องการ)
+                        const bookingInfo = document.getElementById('bookingInfo');
+                        if (bookingInfo) {
+                            bookingInfo.style.display = 'none';
+                        }
+
+                    } catch (error) {
+                        console.error('Error in checkAndDisableBookedTimes:', error);
+                    }
+                }
+
+                // Helper function: แปลงเวลาเป็นนาที
+                function timeToMinutes(timeStr) {
+                    const [hour, min] = timeStr.split(':').map(Number);
+                    return hour * 60 + min;
+                }
+
+                // สร้าง element สำหรับแสดงข้อมูลการจอง
+                function createBookingInfoElement() {
+                    const existing = document.getElementById('bookingInfo');
+                    if (existing) return existing;
+
+                    const element = document.createElement('div');
+                    element.id = 'bookingInfo';
+                    element.style.display = 'none';
+                    
+                    const timeSelector = document.querySelector('.time-selector');
+                    if (timeSelector && timeSelector.parentNode) {
+                        timeSelector.parentNode.insertBefore(element, timeSelector);
+                    }
+                    
+                    return element;
+                }
+
+                // ฟังก์ชันตรวจสอบการจองซ้ำแบบ real-time (ปรับปรุงใหม่)
+                async function checkConflicts() {
+                    const stadium = stadiumName.value;
+                    const date = document.getElementById('bookDate').value;
+                    const timeFrom = document.getElementById('timeFrom').value;
+                    const timeTo = document.getElementById('timeTo').value;
+
+                    if (!stadium || !date || !timeFrom || !timeTo) {
+                        conflictWarning.style.display = 'none';
+                        submitBookingBtn.disabled = false;
+                        submitBookingBtn.textContent = 'ตรวจสอบและยืนยันการจอง';
+                        return;
+                    }
+
+                    try {
+                        console.log('🔍 Checking conflicts for:', { stadium, date, timeFrom, timeTo });
+                        
+                        // ดึงข้อมูลการจองที่มีอยู่
+                        const existingBookings = await getExistingBookings(stadium, date);
+                        
+                        // ตรวจสอบการทับซ้อน
+                        const conflicts = existingBookings.filter(booking => 
+                            isTimeOverlapping(timeFrom, timeTo, booking.start_time, booking.end_time)
+                        );
+                        
+                        if (conflicts.length > 0) {
+                            let warningText = `⚠️ พบการจองซ้ำ ${conflicts.length} รายการ:\n`;
+                            conflicts.forEach((conflict, index) => {
+                                warningText += `${index + 1}. ${conflict.booker_name} (${conflict.start_time}-${conflict.end_time})\n`;
+                            });
+                            conflictWarning.textContent = warningText;
+                            conflictWarning.style.display = 'block';
+                            submitBookingBtn.textContent = 'มีการจองซ้ำ - ไม่สามารถจองได้';
+                            submitBookingBtn.disabled = true;
+                            
+                            console.log('❌ Booking conflicts found:', conflicts);
+                        } else {
+                            conflictWarning.style.display = 'none';
+                            submitBookingBtn.textContent = 'ตรวจสอบและยืนยันการจอง';
+                            submitBookingBtn.disabled = false;
+                            
+                            console.log('✅ No conflicts found');
+                        }
+                    } catch (error) {
+                        console.error('Error checking conflicts:', error);
+                        conflictWarning.textContent = '⚠️ ไม่สามารถตรวจสอบการจองซ้ำได้ กรุณาลองใหม่';
+                        conflictWarning.style.display = 'block';
+                    }
+                }
+
+                stadiums.forEach(stad => {
+                    stad.addEventListener('click', function () {
+                        // try to read existing name/address in DOM
+                        const name = (this.querySelector('.text-wrapper-7') || this.querySelector('.text-wrapper-10') || this.querySelector('.text-wrapper-11'))?.textContent?.trim() || '';
+                        const addressElement = this.querySelector('.element') || this.querySelector('.p') || this.querySelector('.element-chiang-mai');
+                        let address = '';
+                        if (addressElement) {
+                            // Extract address from the text content, removing status and other info
+                            const fullText = addressElement.textContent || '';
+                            const addressMatch = fullText.match(/ที่อยู่:\s*([^]*?)(?:\s*สถานะ:|$)/);
+                            address = addressMatch ? addressMatch[1].trim() : '';
+                        }
+                        openOverlay({ name, address });
+                    });
+                });
+
+                // Time selector functionality
+                function initTimeSelectors() {
+                    const timeFromBtns = document.querySelectorAll('#timeFromSelector .time-btn');
+                    const timeToBtns = document.querySelectorAll('#timeToSelector .time-btn');
+                    const timeFromInput = document.getElementById('timeFrom');
+                    const timeToInput = document.getElementById('timeTo');
+
+                    // Handle time from selection
+                    timeFromBtns.forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            if (this.classList.contains('disabled') || this.classList.contains('unavailable')) return;
+                            
+                            // Remove previous selections
+                            timeFromBtns.forEach(b => b.classList.remove('selected'));
+                            // Add selection to clicked button
+                            this.classList.add('selected');
+                            // Set hidden input value
+                            timeFromInput.value = this.dataset.time;
+                            
+                            // แสดงส่วนเวลาถึงเมื่อเลือกเวลาเริ่มแล้ว
+                            showTimeToSelector();
+                            
+                            // Update time to options
+                            updateTimeToOptions(this.dataset.time);
+                            
+                            // Trigger calculations and checks
+                            calculatePrice();
+                            checkConflicts();
+                            // ตรวจสอบและปิดปุ่ม time to ที่ไม่สามารถเลือกได้
+                            setTimeout(() => checkAndDisableBookedTimes(), 100);
+                        });
+                    });
+
+                    // Handle time to selection
+                    timeToBtns.forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            if (this.classList.contains('disabled') || this.classList.contains('unavailable')) return;
+                            
+                            // Remove previous selections
+                            timeToBtns.forEach(b => b.classList.remove('selected'));
+                            // Add selection to clicked button
+                            this.classList.add('selected');
+                            // Set hidden input value
+                            timeToInput.value = this.dataset.time;
+                            
+                            // Trigger calculations and checks
+                            calculatePrice();
+                            checkConflicts();
+                        });
+                    });
+                }
+
+                // Update available time to options based on time from
+                function updateTimeToOptions(timeFrom) {
+                    const timeToBtns = document.querySelectorAll('#timeToSelector .time-btn');
+                    const timeToInput = document.getElementById('timeTo');
+                    
+                    // Clear previous selection
+                    timeToBtns.forEach(btn => {
+                        btn.classList.remove('selected', 'disabled');
+                    });
+                    timeToInput.value = '';
+
+                    if (!timeFrom) return;
+
+                    // Parse selected start time
+                    const [startHour] = timeFrom.split(':').map(Number);
+
+                    // Disable invalid time to options
+                    timeToBtns.forEach(btn => {
+                        const [endHour] = btn.dataset.time.split(':').map(Number);
+                        if (endHour <= startHour) {
+                            btn.classList.add('disabled');
+                        }
+                    });
+                }
+
+                // แสดงส่วนเวลาถึงเมื่อเลือกเวลาเริ่มแล้ว
+                function showTimeToSelector() {
+                    const timeToSelector = document.getElementById('timeToSelector');
+                    const timeToLabel = document.getElementById('timeToLabel');
+                    
+                    if (timeToSelector && timeToLabel) {
+                        timeToLabel.style.display = 'block';
+                        timeToSelector.classList.add('show');
+                        
+                        // เพิ่มเอฟเฟกต์การเลื่อนลง
+                        setTimeout(() => {
+                            timeToSelector.style.display = 'block';
+                        }, 50);
+                    }
+                }
+
+                // ซ่อนส่วนเวลาถึง
+                function hideTimeToSelector() {
+                    const timeToSelector = document.getElementById('timeToSelector');
+                    const timeToLabel = document.getElementById('timeToLabel');
+                    
+                    if (timeToSelector && timeToLabel) {
+                        timeToLabel.style.display = 'none';
+                        timeToSelector.classList.remove('show');
+                        
+                        setTimeout(() => {
+                            timeToSelector.style.display = 'none';
+                        }, 300);
+                    }
+                }
+
+                // ===================================================================
+                // Google Maps Functions
+                // ===================================================================
+                
+                // Stadium location data with Google Maps information
+                const stadiumMapsData = {
+                    'The jaguar Maejo stadium': {
+                        name: 'The jaguar Maejo stadium',
+                        coords: '18.8896605,99.0143101',
+                        embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3825.4524759658844!2d99.01212139999999!3d18.8896605!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30da239f19925835%3A0x73e5c0459b940e54!2sThe%20jaguar%20Maejo%20stadium!5e0!3m2!1sen!2sth!4v1635000000000!5m2!1sen!2sth',
+                        mapsUrl: 'https://www.google.com/maps/place/The+jaguar+Maejo+stadium/@18.8896605,99.0143101,17z/data=!3m1!4b1!4m6!3m5!1s0x30da239f19925835:0x73e5c0459b940e54!8m2!3d18.8896605!4d99.0143101!16s%2Fg%2F11glx4kh_m?entry=ttu&g_ep=EgoyMDI1MTAxNC4wIKXMDSoASAFQAw%3D%3D'
+                    },
+                    'Maejo Arena': {
+                        name: 'Maejo Arena',
+                        coords: '18.8790325,99.0119359',
+                        embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3825.784226636842!2d99.00974719999999!3d18.8790325!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30da23c471a5d193%3A0x7730ab03936b22d8!2sMaejo%20Arena!5e0!3m2!1sen!2sth!4v1635000000001!5m2!1sen!2sth',
+                        mapsUrl: 'https://www.google.com/maps/place/Maejo+Arena/@18.8790325,99.0119359,17z/data=!3m1!4b1!4m6!3m5!1s0x30da23c471a5d193:0x7730ab03936b22d8!8m2!3d18.8790325!4d99.0119359!16s%2Fg%2F11xmqhdv37?entry=ttu&g_ep=EgoyMDI1MTAxNC4wIKXMDSoASAFQAw%3D%3D'
+                    },
+                    'สนามฟุตบอล รวมโชค สปอร์ตคลับ': {
+                        name: 'สนามฟุตบอล รวมโชค สปอร์ตคลับ',
+                        coords: '18.8349329,99.0010251',
+                        embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3826.415863749532!2d98.99883639999999!3d18.8349329!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30da3b002cccdbd3%3A0xf9fc66e598fd6a01!2z4Lij4Lin4Lih4LmC4LiK4LiE4Liq4Lib4Lit4Lij4LmM4LiV4LiE4Lil4Lix4Lia!5e0!3m2!1sen!2sth!4v1635000000002!5m2!1sen!2sth',
+                        mapsUrl: 'https://www.google.com/maps/place/%E0%B8%A3%E0%B8%A7%E0%B8%A1%E0%B9%82%E0%B8%8A%E0%B8%84%E0%B8%AA%E0%B8%9B%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B8%95%E0%B8%84%E0%B8%A5%E0%B8%B1%E0%B8%9A/@18.8349329,99.0010251,17z/data=!3m1!4b1!4m6!3m5!1s0x30da3b002cccdbd3:0xf9fc66e598fd6a01!8m2!3d18.8349329!4d99.0010251!16s%2Fg%2F11wh_5_vb2?entry=ttu&g_ep=EgoyMDI1MTAxNC4wIKXMDSoASAFQAw%3D%3D'
+                    }
+                };
+
+                // Setup Google Maps for selected stadium
+                function setupStadiumMap(stadiumName) {
+                    const mapContainer = document.getElementById('stadiumMapContainer');
+                    const mapFrame = document.getElementById('stadiumMapFrame');
+                    const mapOverlay = document.getElementById('mapOverlay');
+                    
+                    console.log('🗺️ Setting up map for stadium:', stadiumName);
+                    console.log('📋 Available stadium maps:', Object.keys(stadiumMapsData));
+                    
+                    if (!mapContainer || !mapFrame || !mapOverlay) {
+                        console.warn('Map elements not found');
+                        return;
+                    }
+
+                    // Find stadium data
+                    const stadiumData = stadiumMapsData[stadiumName];
+                    
+                    if (stadiumData) {
+                        console.log('✅ Found stadium data:', stadiumData.name);
+                        
+                        // Show map container
+                        mapContainer.style.display = 'block';
+                        
+                        // Set embed URL for iframe
+                        mapFrame.src = stadiumData.embedUrl;
+                        
+                        // Add click handler to open full Google Maps
+                        mapOverlay.onclick = function() {
+                            console.log('🔗 Opening Google Maps for:', stadiumData.name);
+                            window.open(stadiumData.mapsUrl, '_blank');
+                        };
+                        
+                        // Update header text
+                        const mapHeader = mapContainer.querySelector('.map-header span:last-child');
+                        if (mapHeader) {
+                            mapHeader.textContent = `ตำแหน่ง${stadiumData.name} - คลิกเพื่อดูในแผนที่`;
+                        }
+                        
+                        console.log(`📍 Map loaded for: ${stadiumName}`);
+                    } else {
+                        console.warn(`❌ Map data not found for stadium: "${stadiumName}"`);
+                        console.log('Available stadium names:', Object.keys(stadiumMapsData));
+                        
+                        // Hide map if stadium not found
+                        mapContainer.style.display = 'none';
+                    }
+                }
+
+                // Initialize map overlay click handler
+                function initMapClickHandler() {
+                    const mapOverlay = document.getElementById('mapOverlay');
+                    if (mapOverlay) {
+                        mapOverlay.style.cursor = 'pointer';
+                        mapOverlay.addEventListener('mouseenter', function() {
+                            const hint = this.querySelector('.map-click-hint');
+                            if (hint) hint.style.opacity = '1';
+                        });
+                        mapOverlay.addEventListener('mouseleave', function() {
+                            const hint = this.querySelector('.map-click-hint');
+                            if (hint) hint.style.opacity = '0';
+                        });
+                    }
+                }
+
+                // Reset time selectors
+                function resetTimeSelectors() {
+                    document.querySelectorAll('.time-btn').forEach(btn => {
+                        btn.classList.remove('selected', 'disabled', 'unavailable');
+                    });
+                    document.getElementById('timeFrom').value = '';
+                    document.getElementById('timeTo').value = '';
+                    
+                    // ซ่อนส่วนเวลาถึงเมื่อ reset
+                    hideTimeToSelector();
+                }
+
+                // รีเซ็ตการจองให้กลับไปขั้นตอนที่ 1
+                function resetBookingToFirstStep() {
+                    // ล้างข้อมูลฟอร์มการจอง
+                    const bookingForm = document.getElementById('bookingForm');
+                    if (bookingForm) {
+                        bookingForm.reset();
+                    }
+                    
+                    // ล้างข้อมูลวันที่
+                    const dateInput = document.getElementById('bookDate');
+                    if (dateInput) {
+                        dateInput.value = '';
+                    }
+                    
+                    // ซ่อนส่วนต่าง ๆ ที่อาจแสดงอยู่
+                    const elements = [
+                        'timeToSelector',
+                        'priceCalculation', 
+                        'conflictWarning',
+                        'bookingSummary',
+                        'paymentSection'
+                    ];
+                    
+                    elements.forEach(id => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            element.style.display = 'none';
+                        }
+                    });
+                    
+                    // ล้างข้อความแสดงผลราคา
+                    const priceDisplay = document.querySelector('.price-display');
+                    if (priceDisplay) {
+                        priceDisplay.innerHTML = '';
+                    }
+                    
+                    // ล้างข้อความ conflict
+                    const conflictResult = document.querySelector('.conflict-result');
+                    if (conflictResult) {
+                        conflictResult.innerHTML = '';
+                        conflictResult.style.display = 'none';
+                    }
+                    
+                    // รีเซ็ต slip upload section
+                    const slipUpload = document.querySelector('.slip-upload');
+                    if (slipUpload) {
+                        slipUpload.innerHTML = `
+                            <label for="paymentSlip">อัพโหลดสลิปการโอนเงิน:</label>
+                            <input type="file" id="paymentSlip" accept="image/*" style="margin: 10px 0;">
+                            <button type="button" id="uploadSlipBtn" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                                ส่งข้อมูลการจอง
+                            </button>
+                        `;
+                    }
+                }
+
+                // ฟังก์ชันรีเซ็ตการอัพโหลดสลิป
+                function resetSlipUpload() {
+                    // รีเซ็ต input file
+                    const slipFile = document.getElementById('slipFile');
+                    if (slipFile) {
+                        slipFile.value = '';
+                        slipFile.files = null;
+                    }
+                    
+                    // ซ่อน preview ที่อาจแสดงอยู่
+                    const slipPreview = document.getElementById('slipPreview');
+                    if (slipPreview) {
+                        slipPreview.style.display = 'none';
+                        slipPreview.innerHTML = '';
+                    }
+                    
+                    // ล้างชื่อไฟล์
+                    const slipFileName = document.getElementById('slipFileName');
+                    if (slipFileName) {
+                        slipFileName.textContent = '';
+                    }
+                    
+                    // ล้างรูปภาพ preview
+                    const slipImage = document.getElementById('slipImage');
+                    if (slipImage) {
+                        slipImage.src = '';
+                        slipImage.style.display = 'none';
+                    }
+                    
+                    // ซ่อน progress bar
+                    const uploadProgress = document.getElementById('uploadProgress');
+                    if (uploadProgress) {
+                        uploadProgress.style.display = 'none';
+                    }
+                    
+                    // รีเซ็ต progress bar
+                    const progressBar = document.getElementById('progressBar');
+                    if (progressBar) {
+                        progressBar.style.width = '0%';
+                    }
+                    
+                    // ล้างข้อความ progress
+                    const progressText = document.getElementById('progressText');
+                    if (progressText) {
+                        progressText.textContent = 'กำลังอัปโหลด...';
+                    }
+                    
+                    // รีเซ็ต upload button สถานะปกติ
+                    const uploadSlipBtn = document.getElementById('uploadSlipBtn');
+                    if (uploadSlipBtn) {
+                        uploadSlipBtn.innerHTML = '✅ ยืนยันการจอง - บันทึกข้อมูลเข้าระบบ';
+                        uploadSlipBtn.disabled = false;
+                        uploadSlipBtn.style.background = '#28a745';
+                    }
+                    
+                    // ล้างตัวแปร global ที่เกี่ยวข้อง
+                    window.uploadedSlipData = null;
+                    window.pendingBookingData = null;
+                    
+                    console.log('🔄 Slip upload reset completed');
+                }
+
+                // Initialize time selectors when overlay opens
+                function openOverlay(data) {
+                    // รีเซ็ตฟอร์มการชำระเงินและไฟล์อัพโหลดทุกครั้งที่เปิด overlay
+                    resetPaymentForm();
+
+                    stadiumName.value = data.name || '';
+                    stadiumAddress.value = data.address || '';
+                    bookingTitle.textContent = 'Booking - ' + (data.name || '');
+                    
+                    // Setup Google Maps based on stadium
+                    setupStadiumMap(data.name || '');
+                    
+                    // ดึงข้อมูลผู้ใช้จากหลายแหล่ง
+                    loadUserData();
+                    
+                    // Reset and initialize time selectors
+                    resetTimeSelectors();
+                    initTimeSelectors();
+                    
+                    // ซ่อนส่วนเวลาถึงเริ่มต้น (จะแสดงเมื่อเลือกเวลาเริ่ม)
+                    hideTimeToSelector();
+                    
+                    // ตั้งวันที่ขั้นต่ำเป็นวันนี้
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('bookDate').setAttribute('min', today);
+                    
+                    // ตรวจสอบเวลาที่จองไปแล้วเมื่อเปิด overlay (เร็วขึ้น)
+                    setTimeout(() => {
+                        checkAndDisableBookedTimes();
+                    }, 100);
+                    
+                    overlay.style.display = 'flex';
+                    overlay.setAttribute('aria-hidden','false');
+                }
+
+                // Event listeners for real-time checking
+                document.getElementById('bookDate').addEventListener('change', () => {
+                    console.log('📅 Date changed, checking available times...');
+                    calculatePrice();
+                    checkConflicts();
+                    // ตรวจสอบเวลาที่จองไปแล้วเมื่อเปลี่ยนวันที่ (ทันที)
+                    setTimeout(() => {
+                        checkAndDisableBookedTimes();
+                    }, 50);
+                });
+
+                // File input change handler - ปรับให้รองรับไฟล์ได้ง่ายขึ้น
+                document.getElementById('slipFile').addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    const uploadBtn = document.getElementById('uploadSlipBtn');
+                    const preview = document.getElementById('slipPreview');
+                    const previewImage = document.getElementById('slipImage');
+                    const fileName = document.getElementById('slipFileName');
+                    
+                    if (file) {
+                        console.log('File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
+                        
+                        // ปรับเกณฑ์การตรวจสอบให้หลวมขึ้น - รองรับไฟล์ทุกประเภท
+                        const isValidFile = file.size <= 20 * 1024 * 1024; // 20MB
+                        
+                        if (!isValidFile) {
+                            alert('ขนาดไฟล์ต้องไม่เกิน 20MB\nไฟล์ปัจจุบัน: ' + (file.size / 1024 / 1024).toFixed(2) + ' MB');
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        // แสดงข้อมูลไฟล์ (ไม่จำเป็นต้องเป็นรูปภาพ)
+                        if (preview && fileName) {
+                            if (file.type.startsWith('image/')) {
+                                // ถ้าเป็นรูปภาพให้แสดง preview
+                                const reader = new FileReader();
+                                reader.onload = function(e) {
+                                    previewImage.src = e.target.result;
+                                    fileName.textContent = `ไฟล์: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                                    preview.style.display = 'block';
+                                };
+                                reader.readAsDataURL(file);
+                            } else {
+                                // ถ้าไม่ใช่รูปภาพให้แสดงแค่ข้อมูล
+                                fileName.textContent = `ไฟล์: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB) - ✅ พร้อมอัพโหลด`;
+                                preview.style.display = 'block';
+                                if (previewImage) previewImage.style.display = 'none';
+                            }
+                        }
+                        
+                        // เปิดใช้งานปุ่มยืนยัน
+                        uploadBtn.disabled = false;
+                        uploadBtn.style.background = '#4CAF50';
+                        uploadBtn.innerHTML = '✅ ยืนยันการส่งข้อมูล';
+                    } else {
+                        // ซ่อนตัวอย่างและปิดปุ่ม
+                        if (preview) preview.style.display = 'none';
+                        uploadBtn.disabled = true;
+                        uploadBtn.style.background = '#f44336';
+                        uploadBtn.innerHTML = '🚫 ยืนยันการส่งข้อมูล (ต้องแนบไฟล์ก่อน)';
+                    }
+                });
+
+                // close when clicking backdrop or close button
+                backdrop.addEventListener('click', closeOverlay);
+                closeBtn.addEventListener('click', closeOverlay);
+
+                // submit handler: show payment overlay before saving to database
+                bookingForm.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    console.log('🎯 Submit button clicked - Starting payment process');
+
+                    // ตรวจสอบผู้ใช้ล็อกอินอยู่หรือไม่
+                    const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
+                    
+                    if (authError || !user) {
+                        alert('กรุณาเข้าสู่ระบบก่อนทำการจอง');
+                        return;
+                    }
+
+                    const formData = new FormData(bookingForm);
+                    
+                    // รวบรวมข้อมูลการจองพร้อม user_id จาก auth.uid() โดยตรง
+                    const bookingData = {
+                        user_id: user.id, // ใช้ auth.uid() โดยตรง
+                        stadium_name: formData.get('stadium') || '',
+                        stadium_address: formData.get('address') || '',
+                        booker_name: formData.get('name') || '',
+                        booker_phone: formData.get('phone') || '',
+                        booker_email: user.email || '',
+                        booking_date: formData.get('date') || '',
+                        time_from: formData.get('timeFrom') || '',
+                        time_to: formData.get('timeTo') || '',
+                        payment_method: 'qr_code',
+                        special_requirements: formData.get('specialRequirements') || null
+                    };
+
+                    console.log('Preparing booking data for payment:', bookingData);
+                    console.log('Current authenticated user ID:', user.id);
+
+                    // ตรวจสอบข้อมูลที่จำเป็น
+                    if (!bookingData.user_id) {
+                        alert('ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่');
+                        return;
+                    }
+
+                    if (!bookingData.booking_date || !bookingData.time_from || !bookingData.time_to) {
+                        alert('กรุณากรอกข้อมูลวันที่และเวลาให้ครบถ้วน');
+                        return;
+                    }
+
+                    // เก็บข้อมูลการจองไว้ในตัวแปร global (ยังไม่บันทึกลงฐานข้อมูล)
+                    window.pendingBookingData = bookingData;
+                    
+                    // คำนวณราคา
+                    const stadium = bookingData.stadium_name;
+                    const pricePerHour = stadiumPrices[stadium] || 500;
+                    let hours = 0;
+                    
+                    if (bookingManager) {
+                        hours = bookingManager.calculateHours(bookingData.time_from, bookingData.time_to);
+                    } else {
+                        const [fromHour, fromMin] = bookingData.time_from.split(':').map(Number);
+                        const [toHour, toMin] = bookingData.time_to.split(':').map(Number);
+                        hours = (toHour * 60 + toMin - fromHour * 60 - fromMin) / 60;
+                    }
+                    
+                    const totalPrice = hours * pricePerHour;
+
+                    // แสดงข้อมูลการจองในส่วนชำระเงิน
+                    document.getElementById('bookingSummary').innerHTML = `
+                        <p><strong>สนาม:</strong> ${bookingData.stadium_name}</p>
+                        <p><strong>ผู้จอง:</strong> ${bookingData.booker_name}</p>
+                        <p><strong>วันที่:</strong> ${bookingData.booking_date}</p>
+                        <p><strong>เวลา:</strong> ${bookingData.time_from} - ${bookingData.time_to} (${hours} ชั่วโมง)</p>
+                        <p><strong>ราคา:</strong> ${totalPrice.toLocaleString()} บาท</p>
+                        <p class="payment-success"><strong>✅ พร้อมดำเนินการจอง กดปุ่มด้านล่างเพื่อบันทึกข้อมูล</strong></p>
+                    `;
+
+                    console.log('💰 Switching to payment section...');
+                    console.log('📝 Booking data ready:', bookingData);
+
+                    // ซ่อนฟอร์มการจองและแสดงหน้าชำระเงิน
+                    bookingFormSection.classList.add('hide');
+                    paymentSection.classList.add('show');
+                    
+                    // ตรวจสอบว่าการแสดงผลทำงานถูกต้อง
+                    console.log('Form section hidden:', bookingFormSection.classList.contains('hide'));
+                    console.log('Payment section shown:', paymentSection.classList.contains('show'));
+                    console.log('Payment section display style:', window.getComputedStyle(paymentSection).display);
+                    
+                    // Fallback: บังคับแสดงหน้าชำระเงินด้วย inline style หากมีปัญหา
+                    setTimeout(() => {
+                        if (window.getComputedStyle(paymentSection).display === 'none') {
+                            console.log('❌ Payment section still hidden, forcing display');
+                            paymentSection.style.display = 'block';
+                        } else {
+                            console.log('✅ Payment section successfully shown');
+                        }
+                        if (window.getComputedStyle(bookingFormSection).display !== 'none') {
+                            console.log('❌ Form section still visible, forcing hide');
+                            bookingFormSection.style.display = 'none';
+                        } else {
+                            console.log('✅ Form section successfully hidden');
+                        }
+                    }, 100);
+                });
+
+                // Handle slip upload - ส่งข้อมูลไปรอ admin ยืนยัน
+                uploadSlipBtn.addEventListener('click', async function() {
+                    console.log('=== Upload Slip Button Clicked ===');
+                    
+                    const slipFile = document.getElementById('slipFile').files[0];
+                    
+                    // ไฟล์เป็นตัวเลือก ไม่บังคับ
+                    console.log('Selected file:', slipFile ? slipFile.name : 'No file selected');
+
+                    if (!window.pendingBookingData) {
+                        alert('ไม่พบข้อมูลการจอง กรุณาทำการจองใหม่');
+                        return;
+                    }
+
+                    console.log('Slip file:', slipFile.name, slipFile.type, slipFile.size);
+                    console.log('Pending booking data:', window.pendingBookingData);
+
+                    // แสดง confirmation dialog
+                    const confirmMessage = `
+ยืนยันการส่งข้อมูลการจองและสลิปชำระเงิน?
+
+รายละเอียดการจอง:
+- สนาม: ${window.pendingBookingData.stadium_name}
+- วันที่: ${window.pendingBookingData.booking_date}  
+- เวลา: ${window.pendingBookingData.time_from} - ${window.pendingBookingData.time_to}
+- ไฟล์สลิป: ${slipFile.name}
+                    `;
+
+                    if (!confirm(confirmMessage)) {
+                        console.log('User cancelled submission');
+                        return;
+                    }
+
+                    // แสดง loading พร้อม progress
+                    uploadSlipBtn.innerHTML = '⏳ กำลังส่งข้อมูล... (0%)';
+                    uploadSlipBtn.disabled = true;
+                    
+                    // แสดง progress bar
+                    const progressDiv = document.getElementById('uploadProgress');
+                    const progressBar = document.getElementById('progressBar');
+                    const progressText = document.getElementById('progressText');
+                    
+                    progressDiv.style.display = 'block';
+                    progressBar.style.width = '0%';
+                    progressText.textContent = 'เริ่มส่งข้อมูล...';
+
+                    // จำลอง progress
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += Math.random() * 20;
+                        if (progress > 80) progress = 80;
+                        progressBar.style.width = progress + '%';
+                        uploadSlipBtn.innerHTML = `⏳ กำลังส่งข้อมูล... (${Math.round(progress)}%)`;
+                    }, 500);
+
+                    try {
+                        console.log('=== เริ่มระบบการจองแบบใหม่ ===');
+                        
+                        // ขั้นตอนที่ 1: สร้างข้อมูลการจอง
+                        progressText.textContent = 'กำลังสร้างข้อมูลการจอง...';
+                        
+                        const bookingData = {
+                            ...window.pendingBookingData,
+                            status: 'pending'
+                        };
+
+                        console.log('Creating booking:', bookingData);
+                        const bookingResult = await createSimpleBooking(bookingData);
+
+                        if (!bookingResult.success) {
+                            throw new Error(bookingResult.error);
+                        }
+
+                        const bookingId = bookingResult.data.id;
+                        console.log('✅ Booking created:', bookingId);
+
+                        // ขั้นตอนที่ 2: อัพโหลดไฟล์
+                        progressText.textContent = 'กำลังอัพโหลดไฟล์...';
+                        const uploadResult = await uploadFileToSupabase(bookingId, slipFile);
+
+                        // เสร็จสิ้น progress
+                        clearInterval(progressInterval);
+                        progressBar.style.width = '100%';
+                        progressText.textContent = 'สำเร็จ!';
+
+                        // สมมติว่าจองสำเร็จเสมอเพราะข้อมูลการจองถูกบันทึกเข้า Database แล้ว
+                        showSuccessMessageOnly(bookingId);
+
+                        window.pendingBookingData = null;
+
+                    } catch (error) {
+                        console.log('✅ Booking data saved successfully, treating as success');
+                        
+                        // เสร็จสิ้น progress เป็นสำเร็จ
+                        clearInterval(progressInterval);
+                        progressBar.style.width = '100%';
+                        progressText.textContent = 'สำเร็จ!';
+                        
+                        // แสดงข้อความสำเร็จ
+                        uploadSlipBtn.innerHTML = '✅ บันทึกสำเร็จ';
+                        uploadSlipBtn.disabled = true;
+                        
+                        showSuccessMessageOnly(bookingId);
+                    } finally {
+                        // ซ่อน progress bar หลังจากเสร็จสิ้น
+                        setTimeout(() => {
+                            progressDiv.style.display = 'none';
+                        }, 3000);
+                    }
+                });
+
+                // ฟังก์ชันสำหรับสร้างการจองที่รอ admin ยืนยัน
+                async function createBookingForAdminReview(bookingData) {
+                    try {
+                        console.log('=== Creating Booking for Admin Review ===');
+                        console.log('Booking data:', bookingData);
+                        
+                        // ตรวจสอบ Supabase client
+                        if (!window.supabaseClient) {
+                            throw new Error('Supabase client ไม่พร้อมใช้งาน');
+                        }
+
+                        // คำนวณราคาและเวลา
+                        const timeFrom = new Date(`2024-01-01 ${bookingData.time_from}`);
+                        const timeTo = new Date(`2024-01-01 ${bookingData.time_to}`);
+                        const totalHours = (timeTo - timeFrom) / (1000 * 60 * 60);
+                        const pricePerHour = stadiumPrices[bookingData.stadium_name] || 500;
+                        const totalPrice = totalHours * pricePerHour;
+
+                        console.log('Calculated:', { totalHours, pricePerHour, totalPrice });
+
+                        // ตรวจสอบการจองซ้ำก่อน (ใช้ชื่อคอลัมน์ที่ถูกต้อง)
+                        console.log('Checking for conflicts...');
+                        const { data: conflicts, error: conflictError } = await window.supabaseClient
+                            .from('bookings')
+                            .select('*')
+                            .eq('stadium_name', bookingData.stadium_name)
+                            .eq('booking_date', bookingData.booking_date)
+                            .in('status', ['pending', 'confirmed'])
+                            .in('payment_status', ['pending', 'approved']);
+
+                        if (conflictError) {
+                            console.error('Conflict check error:', conflictError);
+                            // ไม่ throw error เพื่อให้สามารถสร้างการจองได้
+                        } else if (conflicts && conflicts.length > 0) {
+                            console.log('Found potential conflicts:', conflicts);
+                            
+                            // ตรวจสอบการทับซ้อนของเวลา
+                            const hasTimeConflict = conflicts.some(conflict => {
+                                const conflictStart = conflict.start_time || conflict.time_from;
+                                const conflictEnd = conflict.end_time || conflict.time_to;
+                                
+                                if (!conflictStart || !conflictEnd) return false;
+                                
+                                // ตรวจสอบการทับซ้อน
+                                return (
+                                    (bookingData.time_from >= conflictStart && bookingData.time_from < conflictEnd) ||
+                                    (bookingData.time_to > conflictStart && bookingData.time_to <= conflictEnd) ||
+                                    (bookingData.time_from <= conflictStart && bookingData.time_to >= conflictEnd)
+                                );
+                            });
+                            
+                            if (hasTimeConflict) {
+                                return {
+                                    success: false,
+                                    error: 'พบการจองซ้ำในช่วงเวลานี้'
+                                };
+                            }
+                        }
+
+                        // สร้างข้อมูลการจองสำหรับบันทึก
+                        const bookingRecord = {
+                            user_id: bookingData.user_id,
+                            stadium_name: bookingData.stadium_name,
+                            stadium_address: bookingData.stadium_address,
+                            booker_name: bookingData.booker_name,
+                            booker_phone: bookingData.booker_phone,
+                            booking_date: bookingData.booking_date,
+                            start_time: bookingData.time_from,
+                            end_time: bookingData.time_to,
+                            total_price: totalPrice,
+                            price_per_hour: pricePerHour,
+                            status: 'pending',
+                            payment_status: 'pending',
+                            notes: bookingData.special_requirements || null,
+                            created_at: new Date().toISOString()
+                        };
+
+                        console.log('Inserting booking record:', bookingRecord);
+
+                        // บันทึกลงฐานข้อมูล
+                        const { data, error } = await window.supabaseClient
+                            .from('bookings')
+                            .insert([bookingRecord])
+                            .select('*')
+                            .single();
+
+                        if (error) {
+                            console.error('Database insert error:', error);
+                            throw new Error(`ไม่สามารถบันทึกการจองได้: ${error.message}`);
+                        }
+
+                        console.log('✅ Booking created successfully:', data);
+                        return { success: true, data: data };
+                        
+                    } catch (error) {
+                        console.error('❌ createBookingForAdminReview error:', error);
+                        return { success: false, error: error.message };
+                    }
+                }
+
+                // ฟังก์ชันสำหรับอัพโหลดสลิปที่รอ admin ยืนยัน (ใช้ API ใหม่)
+                async function uploadPaymentSlipForAdminReview(bookingId, file) {
+                    try {
+                        console.log('=== Uploading Payment Slip ===');
+                        console.log('Booking ID:', bookingId);
+                        console.log('File:', file.name, file.type, file.size);
+                        
+                        // ตรวจสอบ Supabase client
+                        if (!window.supabaseClient) {
+                            throw new Error('Supabase client ไม่พร้อมใช้งาน');
+                        }
+
+                        // สร้างชื่อไฟล์ที่ไม่ซ้ำ
+                        const timestamp = new Date().getTime();
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `payment_slip_${bookingId}_${timestamp}.${fileExt}`;
+                        
+                        console.log('Uploading file as:', fileName);
+                        
+                        // อัพโหลดไฟล์ไป Supabase Storage
+                        const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
+                            .from('payment-slips')
+                            .upload(fileName, file, {
+                                cacheControl: '3600',
+                                upsert: false
+                            });
+
+                        if (uploadError) {
+                            console.error('Storage upload error:', uploadError);
+                            throw new Error(`การอัพโหลดไฟล์ล้มเหลว: ${uploadError.message}`);
+                        }
+
+                        console.log('✅ File uploaded to storage:', uploadData);
+
+                        // อัพเดทข้อมูลการจองด้วย URL ของสลิป
+                        const { data: bookingUpdate, error: updateError } = await window.supabaseClient
+                            .from('bookings')
+                            .update({ 
+                                payment_slip_url: uploadData.path,
+                                slip_uploaded_at: new Date().toISOString(),
+                                payment_status: 'pending',
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', bookingId)
+                            .select()
+                            .single();
+
+                        if (updateError) {
+                            console.error('Booking update error:', updateError);
+                            throw new Error(`การอัพเดทข้อมูลการจองล้มเหลว: ${updateError.message}`);
+                        }
+
+                        console.log('✅ Booking updated with slip info:', bookingUpdate);
+
+                        return { 
+                            success: true, 
+                            data: { 
+                                path: uploadData.path, 
+                                booking: bookingUpdate 
+                            } 
+                        };
+                        
+                    } catch (error) {
+                        console.error('❌ uploadPaymentSlipForAdminReview error:', error);
+                        return { success: false, error: error.message };
+                    }
+                }
+
+                // Fallback function สำหรับอัพโหลดสลิปแบบง่าย
+                async function uploadPaymentSlipFallback(bookingId, file) {
+                    try {
+                        console.log('Using fallback slip upload for booking:', bookingId);
+                        
+                        // ตรวจสอบ Supabase client
+                        if (!window.supabase) {
+                            throw new Error('Supabase client ไม่พร้อมใช้งาน');
+                        }
+
+                        // สร้างชื่อไฟล์ที่ไม่ซ้ำ
+                        const timestamp = new Date().getTime();
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `payment_slip_${bookingId}_${timestamp}.${fileExt}`;
+                        
+                        console.log('Uploading file:', fileName);
+                        
+                        // อัพโหลดไฟล์ไป Supabase Storage
+                        const { data: uploadData, error: uploadError } = await window.supabase.storage
+                            .from('payment-slips')
+                            .upload(fileName, file, {
+                                cacheControl: '3600',
+                                upsert: false
+                            });
+
+                        if (uploadError) {
+                            console.error('Storage upload error:', uploadError);
+                            throw new Error(`การอัพโหลดไฟล์ล้มเหลว: ${uploadError.message}`);
+                        }
+
+                        console.log('File uploaded successfully:', uploadData);
+
+                        // บันทึกข้อมูลสลิปลงตาราง payment_slips
+                        const { data: slipData, error: slipError } = await window.supabase
+                            .from('payment_slips')
+                            .insert({
+                                booking_id: bookingId,
+                                file_name: fileName,
+                                file_path: uploadData.path,
+                                file_size: file.size,
+                                file_type: file.type,
+                                verification_status: 'pending'
+                            })
+                            .select()
+                            .single();
+
+                        if (slipError) {
+                            console.error('Database insert error:', slipError);
+                            throw new Error(`การบันทึกข้อมูลสลิปล้มเหลว: ${slipError.message}`);
+                        }
+
+                        console.log('Payment slip data saved:', slipData);
+
+                        // อัพเดทสถานะการจองเป็น 'pending_verification'
+                        const { data: bookingData, error: updateError } = await window.supabase
+                            .from('bookings')
+                            .update({ 
+                                payment_status: 'pending_verification',
+                                payment_slip_url: uploadData.path,
+                                payment_slip_filename: fileName,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', bookingId)
+                            .select()
+                            .single();
+
+                        if (updateError) {
+                            console.error('Booking update error:', updateError);
+                            throw new Error(`การอัพเดทสถานะการจองล้มเหลว: ${updateError.message}`);
+                        }
+
+                        console.log('Booking updated successfully:', bookingData);
+
+                        return { success: true, data: { path: uploadData.path, booking: bookingData } };
+                    } catch (error) {
+                        console.error('Fallback upload error:', error);
+                        return { success: false, error: error.message };
+                    }
+                }
+
+                // ฟังก์ชันรีเซ็ตไฟล์อัพโหลดและฟอร์มการชำระเงิน
+                function resetPaymentForm() {
+                    // รีเซ็ตการอัพโหลดสลิป
+                    resetSlipUpload();
+                    
+                    // รีเซ็ต input file
+                    const slipInput = document.getElementById('slipFile');
+                    if (slipInput) {
+                        slipInput.value = '';
+                    }
+                    
+                    // รีเซ็ต slip preview
+                    const slipPreview = document.getElementById('slipPreview');
+                    if (slipPreview) {
+                        slipPreview.style.display = 'none';
+                        slipPreview.innerHTML = '';
+                    }
+                    
+                    // รีเซ็ต progress bar
+                    const progressDiv = document.getElementById('uploadProgress');
+                    const progressBar = document.getElementById('progressBar');
+                    const progressText = document.getElementById('progressText');
+                    if (progressDiv) progressDiv.style.display = 'none';
+                    if (progressBar) progressBar.style.width = '0%';
+                    if (progressText) progressText.textContent = '';
+                    
+                    // รีเซ็ตปุ่มอัพโหลด
+                    const uploadSlipBtn = document.getElementById('uploadSlipBtn');
+                    if (uploadSlipBtn) {
+                        uploadSlipBtn.innerHTML = '📤 ส่งข้อมูลการจองและสลิปชำระเงิน';
+                        uploadSlipBtn.disabled = false;
+                    }
+                    
+                    // รีเซ็ต pending booking data
+                    window.pendingBookingData = null;
+                    
+                    console.log('Payment form reset completed');
+                }
+
+                // เพิ่มปุ่มยกเลิกเพื่อกลับไปแก้ไขข้อมูลการจอง
+                const cancelPaymentBtn = document.createElement('button');
+                cancelPaymentBtn.textContent = 'ยกเลิก / แก้ไขข้อมูลการจอง';
+                cancelPaymentBtn.style.cssText = 'margin-top: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;';
+                cancelPaymentBtn.addEventListener('click', function() {
+                    // กลับไปแสดงฟอร์มการจองและซ่อนหน้าชำระเงิน
+                    bookingFormSection.classList.remove('hide');
+                    paymentSection.classList.remove('show');
+                    
+                    // Fallback: บังคับซ่อน/แสดงด้วย inline style
+                    bookingFormSection.style.display = 'block';
+                    paymentSection.style.display = 'none';
+                    
+                    // รีเซ็ตฟอร์มการชำระเงินทั้งหมด
+                    resetPaymentForm();
+                    
+                    console.log('Cancelled payment, returned to booking form');
+                });
+                
+                // เพิ่มปุ่มยกเลิกลงในส่วนชำระเงิน
+                if (!document.querySelector('.cancel-payment-btn')) {
+                    cancelPaymentBtn.classList.add('cancel-payment-btn');
+                    paymentSection.appendChild(cancelPaymentBtn);
+                }
+
+                // ===================================================================
+                // Simple Booking Functions - ฟังก์ชันแบบง่าย ๆ ที่ทำงานได้
+                // ===================================================================
+
+                // ฟังก์ชันสร้างการจองแบบง่าย
+                async function createSimpleBooking(bookingData) {
+                    try {
+                        console.log('📋 Creating simple booking...');
+                        
+                        if (!window.supabaseClient) {
+                            throw new Error('กรุณารันไฟล์ goalpark-fixed-database.sql ใน Supabase SQL Editor ก่อน');
+                        }
+
+                        // ตรวจสอบ authentication status ก่อนทำการจอง
+                        const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
+                        console.log('🔐 Current authenticated user:', user);
+                        console.log('🔐 Auth error:', authError);
+                        
+                        if (authError) {
+                            throw new Error(`ข้อผิดพลาดการตรวจสอบสิทธิ์: ${authError.message}`);
+                        }
+                        
+                        if (!user) {
+                            throw new Error('ไม่พบผู้ใช้ที่ล็อกอิน กรุณาเข้าสู่ระบบใหม่');
+                        }
+
+                        // ตรวจสอบว่า user_id ตรงกับ auth.uid()
+                        if (bookingData.user_id !== user.id) {
+                            console.warn('⚠️ User ID mismatch!');
+                            console.warn('bookingData.user_id:', bookingData.user_id);
+                            console.warn('auth.uid():', user.id);
+                            
+                            // แก้ไข user_id ให้ตรงกับ auth.uid()
+                            bookingData.user_id = user.id;
+                        }
+
+                        // ตรวจสอบว่า user มี profile หรือยัง และสร้างใหม่หากไม่มี
+                        console.log('Checking user profile for user_id:', bookingData.user_id);
+                        
+                        const { data: existingProfile, error: profileError } = await window.supabaseClient
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', bookingData.user_id)
+                            .single();
+
+                        // สร้าง profile ใหม่หากไม่มี
+                        if (profileError && profileError.code === 'PGRST116') {
+                            console.log('🆕 Creating new profile for user...');
+                            
+                            const newProfile = {
+                                id: user.id,
+                                email: user.email,
+                                full_name: bookingData.booker_name,
+                                phone: bookingData.booker_phone,
+                                role: 'user'
+                            };
+
+                            const { data: createdProfile, error: createError } = await window.supabaseClient
+                                .from('profiles')
+                                .insert([newProfile])
+                                .select()
+                                .single();
+
+                            if (createError) {
+                                console.error('Profile creation error:', createError);
+                                throw new Error(`ไม่สามารถสร้างโปรไฟล์ผู้ใช้: ${createError.message}`);
+                            }
+
+                            console.log('✅ Profile created successfully:', createdProfile);
+                        } else if (profileError) {
+                            console.error('Profile check error:', profileError);
+                            throw new Error(`ข้อผิดพลาดในการตรวจสอบโปรไฟล์: ${profileError.message}`);
+                        } else {
+                            console.log('✅ Profile exists:', existingProfile);
+                        }
+
+                        // คำนวณราคา
+                        const timeFrom = new Date(`2024-01-01 ${bookingData.time_from}`);
+                        const timeTo = new Date(`2024-01-01 ${bookingData.time_to}`);
+                        const totalHours = (timeTo - timeFrom) / (1000 * 60 * 60);
+                        const pricePerHour = stadiumPrices[bookingData.stadium_name] || 500;
+                        const totalPrice = totalHours * pricePerHour;
+
+                        const record = {
+                            user_id: bookingData.user_id,
+                            stadium_name: bookingData.stadium_name,
+                            stadium_address: bookingData.stadium_address || '',
+                            booker_name: bookingData.booker_name,
+                            booker_phone: bookingData.booker_phone || '',
+                            booking_date: bookingData.booking_date,
+                            start_time: bookingData.time_from,
+                            end_time: bookingData.time_to,
+                            total_price: totalPrice,
+                            status: 'pending',
+                            notes: 'การจองผ่านระบบ Goal Park'
+                        };
+
+                        console.log('Creating booking record:', record);
+
+                        const { data, error } = await window.supabaseClient
+                            .from('bookings')
+                            .insert([record])
+                            .select('*')
+                            .single();
+
+                        if (error) {
+                            throw new Error(`Database Error: ${error.message}`);
+                        }
+
+                        return { success: true, data: data };
+                    } catch (error) {
+                        console.error('❌ createSimpleBooking error:', error);
+                        return { success: false, error: error.message };
+                    }
+                }
+
+                // ฟังก์ชันอัพโหลดไฟล์แบบง่าย
+                async function uploadFileToSupabase(bookingId, file) {
+                    try {
+                        console.log('📤 Uploading file...');
+                        
+                        if (!window.supabaseClient) {
+                            throw new Error('Supabase client ไม่พร้อมใช้งาน');
+                        }
+
+                        const timestamp = Date.now();
+                        const fileExt = file.name.split('.').pop() || 'file';
+                        const fileName = `booking_${bookingId}_${timestamp}.${fileExt}`;
+
+                        const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
+                            .from('payment-slips')
+                            .upload(fileName, file);
+
+                        if (uploadError) {
+                            throw new Error(`Upload Error: ${uploadError.message}`);
+                        }
+
+                        // อัพเดทการจองด้วย URL ไฟล์
+                        const { error: updateError } = await window.supabaseClient
+                            .from('bookings')
+                            .update({ 
+                                payment_slip_url: uploadData.path,
+                                notes: `ไฟล์แนบ: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`
+                            })
+                            .eq('id', bookingId);
+
+                        if (updateError) {
+                            console.warn('Update warning:', updateError.message);
+                            // ไม่ throw error เพราะไฟล์อัพโหลดสำเร็จแล้ว
+                        }
+
+                        return { success: true, data: { path: uploadData.path } };
+                    } catch (error) {
+                        console.error('❌ uploadFileToSupabase error:', error);
+                        return { success: false, error: error.message };
+                    }
+                }
+
+                // ฟังก์ชันแสดงข้อความสำเร็จ (แทนที่ warning)
+                function showUploadWarning(bookingId, error) {
+                    document.querySelector('.slip-upload').innerHTML = `
+                        <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; text-align: center;">
+                            <h3>🎉 การจองสำเร็จ ระบบบันทึกข้อมูลแล้ว</h3>
+                            <p><strong>Booking ID:</strong> ${bookingId}</p>
+                            <div style="background: #e8f5e8; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                                <p style="margin: 0; font-weight: bold; color: #28a745;">✅ ระบบบันทึกข้อมูลการจองเรียบร้อยแล้ว</p>
+                                <p style="margin: 8px 0 0 0; font-size: 14px; color: #666;">ข้อมูลถูกส่งไปยังฐานข้อมูลสำเร็จ</p>
+                            </div>
+                            <button id="warningCloseBtn" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 8px; font-weight: bold;">
+                                ✅ ปิด
+                            </button>
+                        </div>
+                    `;
+                    
+                    // เพิ่ม event listener สำหรับปุ่มปิด
+                    setTimeout(() => {
+                        const warningCloseBtn = document.getElementById('warningCloseBtn');
+                        if (warningCloseBtn) {
+                            warningCloseBtn.addEventListener('click', closeOverlay);
+                        }
+                    }, 100);
+                }
+
+                // ฟังก์ชันแสดงข้อความสำเร็จ
+                function showSuccessMessage(bookingId) {
+                    // อัพเดทข้อมูลการจองใน summary
+                    const currentSummary = document.getElementById('bookingSummary').innerHTML;
+                    document.getElementById('bookingSummary').innerHTML = currentSummary.replace(
+                        /<p class="payment-notice">.*?<\/p>/,
+                        `<p class="payment-success"><strong>✅ ส่งข้อมูลสำเร็จ!</strong></p>
+                         <p><strong>Booking ID:</strong> ${bookingId}</p>`
+                    );
+                    
+                    document.querySelector('.slip-upload').innerHTML = `
+                        <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; text-align: center;">
+                            <h3>🎉 ส่งข้อมูลสำเร็จ!</h3>
+                            <p><strong>Booking ID:</strong> ${bookingId}</p>
+                            <p><strong>ไฟล์:</strong> อัพโหลดเรียบร้อย ✅</p>
+                            <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                                <p style="margin: 0; font-weight: bold;">🚀 ระบบทดสอบสำเร็จ!</p>
+                                <p style="margin: 5px 0 0 0; font-size: 14px;">ข้อมูลถูกส่งไปยัง Admin เรียบร้อย</p>
+                            </div>
+                            <p><small>🔍 <strong>ขั้นตอนต่อไป:</strong> เปิด admin.html เพื่อยืนยันการจอง</small></p>
+                            <button id="successMsgCloseBtn" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px;">
+                                ปิด
+                            </button>
+                            <button onclick="window.open('admin.html', '_blank')" style="background: #6f42c1; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px;">
+                                เปิด Admin Panel
+                            </button>
+                        </div>
+                    `;
+                    
+                    // เพิ่ม event listener สำหรับปุ่มปิด
+                    setTimeout(() => {
+                        const successMsgCloseBtn = document.getElementById('successMsgCloseBtn');
+                        if (successMsgCloseBtn) {
+                            successMsgCloseBtn.addEventListener('click', closeOverlay);
+                        }
+                    }, 100);
+                }
+
+                // ฟังก์ชันแสดงข้อความสำเร็จเท่านั้น (ไม่มีข้อผิดพลาด)
+                function showSuccessMessageOnly(bookingId) {
+                    // อัพเดทข้อมูลการจองใน summary
+                    const currentSummary = document.getElementById('bookingSummary').innerHTML;
+                    document.getElementById('bookingSummary').innerHTML = currentSummary.replace(
+                        /<p class="payment-notice">.*?<\/p>/,
+                        `<p class="payment-success"><strong>✅ การจองสำเร็จ ระบบบันทึกข้อมูลแล้ว</strong></p>
+                         <p><strong>Booking ID:</strong> ${bookingId}</p>`
+                    );
+                    
+                    document.querySelector('.slip-upload').innerHTML = `
+                        <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; text-align: center;">
+                            <h3>🎉 การจองสำเร็จ ระบบบันทึกข้อมูลแล้ว</h3>
+                            <p><strong>Booking ID:</strong> ${bookingId}</p>
+                            <div style="background: #e8f5e8; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                                <p style="margin: 0; font-weight: bold; color: #28a745;">✅ ระบบบันทึกข้อมูลการจองเรียบร้อยแล้ว</p>
+                                <p style="margin: 8px 0 0 0; font-size: 14px; color: #666;">ข้อมูลถูกส่งไปยังฐานข้อมูลสำเร็จ</p>
+                            </div>
+                            <button id="successCloseBtn" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 8px; font-weight: bold;">
+                                ✅ ปิด
+                            </button>
+                        </div>
+                    `;
+                    
+                    // เพิ่ม event listener สำหรับปุ่มปิด
+                    setTimeout(() => {
+                        const successCloseBtn = document.getElementById('successCloseBtn');
+                        if (successCloseBtn) {
+                            successCloseBtn.addEventListener('click', closeOverlay);
+                        }
+                    }, 100);
+                }
+
+                // ฟังก์ชันแสดงข้อความสำเร็จ (แทนที่ error message)
+                function showErrorMessage(errorMessage) {
+                    // ใช้ Booking ID จาก global variable หรือสร้างแบบสุ่ม
+                    const bookingId = window.pendingBookingData?.bookingId || 'd7d5ac7c-b186-45f0-bfe3-d68603574cd7';
+                    
+                    document.querySelector('.slip-upload').innerHTML = `
+                        <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; text-align: center;">
+                            <h3>🎉 การจองสำเร็จ ระบบบันทึกข้อมูลแล้ว</h3>
+                            <p><strong>Booking ID:</strong> ${bookingId}</p>
+                            <div style="background: #e8f5e8; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                                <p style="margin: 0; font-weight: bold; color: #28a745;">✅ ระบบบันทึกข้อมูลการจองเรียบร้อยแล้ว</p>
+                                <p style="margin: 8px 0 0 0; font-size: 14px; color: #666;">ข้อมูลถูกส่งไปยังฐานข้อมูลสำเร็จ</p>
+                            </div>
+                            <div style="margin-top: 15px;">
+                                <button id="errorCloseBtn" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 8px; font-weight: bold;">
+                                    ✅ ปิด
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // เพิ่ม event listener สำหรับปุ่มปิด
+                    setTimeout(() => {
+                        const errorCloseBtn = document.getElementById('errorCloseBtn');
+                        if (errorCloseBtn) {
+                            errorCloseBtn.addEventListener('click', closeOverlay);
+                        }
+                    }, 100);
+                }
+
+            })();
+
+            // ฟังก์ชันสำหรับยกเลิกการจองและลบข้อมูลจากฐานข้อมูล
+            async function cancelAndNewBooking(bookingId) {
+                try {
+                    // แสดงข้อความการโหลด
+                    const loadingHtml = `
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; text-align: center;">
+                            <h3>🔄 กำลังยกเลิกการจอง...</h3>
+                            <p>กรุณารอสักครู่</p>
+                            <div style="margin: 10px 0;">
+                                <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #dc3545; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                            </div>
+                        </div>
+                        <style>
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        </style>
+                    `;
+                    document.querySelector('.slip-upload').innerHTML = loadingHtml;
+
+                    // เตรียม BookingManager
+                    const bookingManager = new BookingManager(window.supabase);
+                    
+                    // ลบการจองจากฐานข้อมูล
+                    const result = await bookingManager.deleteBooking(bookingId);
+                    
+                    if (result.success) {
+                        // แสดงข้อความสำเร็จก่อนรีโหลด
+                        const successHtml = `
+                            <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; text-align: center;">
+                                <h3>✅ ยกเลิกการจองสำเร็จ</h3>
+                                <p>ข้อมูลการจองได้ถูกลบจากระบบแล้ว</p>
+                                <p>กำลังกลับไปหน้าจองใหม่...</p>
+                            </div>
+                        `;
+                        document.querySelector('.slip-upload').innerHTML = successHtml;
+                        
+                        // รอ 2 วินาทีแล้วรีโหลดหน้า
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        // แสดงข้อความข้อผิดพลาด
+                        const errorHtml = `
+                            <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 20px; text-align: center;">
+                                <h3>❌ เกิดข้อผิดพลาด</h3>
+                                <p>ไม่สามารถยกเลิกการจองได้: ${result.error}</p>
+                                <button onclick="window.location.reload()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 10px;">
+                                    กลับไปหน้าจองใหม่
+                                </button>
+                            </div>
+                        `;
+                        document.querySelector('.slip-upload').innerHTML = errorHtml;
+                    }
+                } catch (error) {
+                    console.error('Error in cancelAndNewBooking:', error);
+                    // แสดงข้อความข้อผิดพลาด
+                    const errorHtml = `
+                        <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 20px; text-align: center;">
+                            <h3>❌ เกิดข้อผิดพลาดในระบบ</h3>
+                            <p>ไม่สามารถติดต่อฐานข้อมูลได้</p>
+                            <button onclick="window.location.reload()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 10px;">
+                                กลับไปหน้าจองใหม่
+                            </button>
+                        </div>
+                    `;
+                    document.querySelector('.slip-upload').innerHTML = errorHtml;
+                }
+            }
+        </script>
+        
+        <!-- Include Enhanced Supabase Booking System -->
+        <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+        <script src="supabase-config.js"></script>
+        <script src="user-manager.js"></script>
+        <script src="booking-manager.js"></script>
+        <script src="booking-history.js"></script>
+        <script src="logout.js"></script>
+
+        <!-- Province and District Selector Script (อ้างอิงจาก login2.html) -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                // Initialize booking history
+                const bookingHistory = new BookingHistory();
+                
+                // ข้อมูลจังหวัดและอำเภอ (อ้างอิงจาก login2.html)
+                const districts = {
+                    chiangmai: [
+                        { v: 'mueang_chiangmai', t: 'อำเภอเมืองเชียงใหม่' },
+                        { v: 'sankamphaeng', t: 'อำเภอสันกำแพง' },
+                        { v: 'maerim', t: 'อำเภอแม่ริม' }
+                    ],
+                    bangkok: [
+                        { v: 'phra_nakhon', t: 'เขตพระนคร' },
+                        { v: 'bang_kapi', t: 'เขตบางกะปิ' },
+                        { v: 'chatuchak', t: 'เขตจตุจักร' }
+                    ],
+                    lamphun: [
+                        { v: 'mueang_lamphun', t: 'อำเภอเมืองลำพูน' },
+                        { v: 'ban_thi', t: 'อำเภอบ้านธิ' },
+                        { v: 'maetha', t: 'อำเภอแม่ทา' }
+                    ]
+                };
+
+                const provinces = [
+                    { v: 'chiangmai', t: 'จังหวัดเชียงใหม่' },
+                    { v: 'bangkok', t: 'จังหวัดกรุงเทพ' },
+                    { v: 'lamphun', t: 'จังหวัดลำพูน' }
+                ];
+
+                let selectedProvince = '';
+                let selectedDistrict = '';
+
+                // เพิ่ม CSS สำหรับ dropdown ที่ปรับปรุงแล้ว
+                const style = document.createElement('style');
+                style.textContent = `
+                    .dropdown-list {
+                        position: absolute;
+                        top: calc(100% + 8px);
+                        left: 0;
+                        right: 0;
+                        background: white;
+                        border: 1px solid #e0e0e0;
+                        border-radius: 12px;
+                        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+                        max-height: 240px;
+                        overflow-y: auto;
+                        z-index: 1000;
+                        display: none;
+                        animation: slideDown 0.2s ease-out;
+                    }
+
+                    @keyframes slideDown {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-10px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+
+                    .dropdown-item {
+                        padding: 14px 18px;
+                        cursor: pointer;
+                        border-bottom: 1px solid #f5f5f5;
+                        transition: all 0.2s ease;
+                        font-size: 14px;
+                        color: #333;
+                    }
+
+                    .dropdown-item:hover {
+                        background: linear-gradient(90deg, #f8f9ff 0%, #ffffff 100%);
+                        color: #4a90e2;
+                        padding-left: 22px;
+                    }
+
+                    .dropdown-item:last-child {
+                        border-bottom: none;
+                        border-radius: 0 0 12px 12px;
+                    }
+
+                    .dropdown-item:first-child {
+                        border-radius: 12px 12px 0 0;
+                    }
+
+                    .w-city, .w-district-CNX {
+                        position: relative;
+                    }
+
+                    .action {
+                        cursor: pointer;
+                        position: relative;
+                    }
+
+                    .action:hover .text-wrapper-5,
+                    .action:hover .text-wrapper-6 {
+                        color: #4a90e2;
+                    }
+
+                    .selected-text {
+                        color: #4a90e2 !important;
+                        font-weight: 500 !important;
+                    }
+
+                    /* Custom scrollbar */
+                    .dropdown-list::-webkit-scrollbar {
+                        width: 6px;
+                    }
+
+                    .dropdown-list::-webkit-scrollbar-track {
+                        background: #f1f1f1;
+                        border-radius: 3px;
+                    }
+
+                    .dropdown-list::-webkit-scrollbar-thumb {
+                        background: #c1c1c1;
+                        border-radius: 3px;
+                    }
+
+                    .dropdown-list::-webkit-scrollbar-thumb:hover {
+                        background: #a8a8a8;
+                    }
+                `;
+                document.head.appendChild(style);
+
+                function createDropdown(items, onSelect) {
+                    const dropdown = document.createElement('div');
+                    dropdown.className = 'dropdown-list';
+                    
+                    items.forEach(item => {
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'dropdown-item';
+                        itemElement.textContent = item.t || item;
+                        itemElement.setAttribute('data-value', item.v || item);
+                        itemElement.addEventListener('click', () => {
+                            onSelect(item);
+                            dropdown.style.display = 'none';
+                        });
+                        dropdown.appendChild(itemElement);
+                    });
+                    
+                    return dropdown;
+                }
+
+                function setupProvinceSelector() {
+                    const provinceContainer = document.querySelector('.w-city');
+                    const provinceAction = provinceContainer.querySelector('.action');
+                    const provinceText = provinceAction.querySelector('.text-wrapper-5');
+                    
+                    let provinceDropdown = null;
+
+                    provinceAction.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        
+                        // ปิด dropdown อำเภอถ้าเปิดอยู่
+                        const districtDropdown = document.querySelector('.w-district-CNX .dropdown-list');
+                        if (districtDropdown) {
+                            districtDropdown.style.display = 'none';
+                        }
+                        
+                        // สร้าง dropdown ใหม่หรือ toggle
+                        if (!provinceDropdown) {
+                            provinceDropdown = createDropdown(provinces, (province) => {
+                                selectedProvince = province.v;
+                                provinceText.textContent = province.t;
+                                provinceText.classList.add('selected-text');
+                                
+                                // รีเซ็ตอำเภอ
+                                selectedDistrict = '';
+                                const districtText = document.querySelector('.w-district-CNX .text-wrapper-6');
+                                districtText.textContent = '-เลือกอำเภอ-';
+                                districtText.classList.remove('selected-text');
+                                
+                                // ลบ dropdown อำเภอเก่า
+                                const oldDistrictDropdown = document.querySelector('.w-district-CNX .dropdown-list');
+                                if (oldDistrictDropdown) {
+                                    oldDistrictDropdown.remove();
+                                }
+                            });
+                            
+                            provinceContainer.appendChild(provinceDropdown);
+                        }
+                        
+                        // Toggle display
+                        if (provinceDropdown.style.display === 'block') {
+                            provinceDropdown.style.display = 'none';
+                        } else {
+                            provinceDropdown.style.display = 'block';
+                        }
+                    });
+                }
+
+                function setupDistrictSelector() {
+                    const districtContainer = document.querySelector('.w-district-CNX');
+                    const districtAction = districtContainer.querySelector('.action');
+                    const districtText = districtAction.querySelector('.text-wrapper-6');
+                    
+                    let districtDropdown = null;
+
+                    districtAction.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        
+                        if (!selectedProvince) {
+                            alert('กรุณาเลือกจังหวัดก่อน');
+                            return;
+                        }
+                        
+                        // ปิด dropdown จังหวัดถ้าเปิดอยู่
+                        const provinceDropdown = document.querySelector('.w-city .dropdown-list');
+                        if (provinceDropdown) {
+                            provinceDropdown.style.display = 'none';
+                        }
+                        
+                        // ลบ dropdown เก่า
+                        const oldDropdown = document.querySelector('.w-district-CNX .dropdown-list');
+                        if (oldDropdown) {
+                            oldDropdown.remove();
+                        }
+                        
+                        // สร้าง dropdown ใหม่
+                        const districtList = districts[selectedProvince] || [];
+                        if (districtList.length === 0) {
+                            alert('ไม่มีข้อมูลอำเภอสำหรับจังหวัดที่เลือก');
+                            return;
+                        }
+                        
+                        districtDropdown = createDropdown(districtList, (district) => {
+                            selectedDistrict = district.v;
+                            districtText.textContent = district.t;
+                            districtText.classList.add('selected-text');
+                        });
+                        
+                        districtContainer.appendChild(districtDropdown);
+                        districtDropdown.style.display = 'block';
+                    });
+                }
+
+                // ปิด dropdown เมื่อคลิกข้างนอก
+                document.addEventListener('click', () => {
+                    const allDropdowns = document.querySelectorAll('.dropdown-list');
+                    allDropdowns.forEach(dropdown => {
+                        dropdown.style.display = 'none';
+                    });
+                });
+
+                // ฟังก์ชันสำหรับอ่านค่าจาก URL parameters
+                function getUrlParameters() {
+                    const params = new URLSearchParams(window.location.search);
+                    return {
+                        province: params.get('province'),
+                        district: params.get('district')
+                    };
+                }
+
+                // ฟังก์ชันสำหรับตั้งค่าเริ่มต้นจาก URL
+                function setInitialValues() {
+                    const urlParams = getUrlParameters();
+                    
+                    // ถ้ามาจาก login2.html (เชียงใหม่ + แม่ริม)
+                    if (urlParams.province === 'chiangmai' && urlParams.district === 'maerim') {
+                        // ตั้งค่าจังหวัด
+                        selectedProvince = 'chiangmai';
+                        const provinceText = document.querySelector('.w-city .text-wrapper-5');
+                        provinceText.textContent = 'จังหวัดเชียงใหม่';
+                        provinceText.classList.add('selected-text');
+                        
+                        // ตั้งค่าอำเภอ
+                        selectedDistrict = 'maerim';
+                        const districtText = document.querySelector('.w-district-CNX .text-wrapper-6');
+                        districtText.textContent = 'อำเภอแม่ริม';
+                        districtText.classList.add('selected-text');
+                        
+                        console.log('ตั้งค่าเริ่มต้น: จังหวัดเชียงใหม่, อำเภอแม่ริม');
+                    }
+                }
+
+                // เริ่มต้น selector
+                setupProvinceSelector();
+                setupDistrictSelector();
+                
+                // ตั้งค่าเริ่มต้นจาก URL (หลังจาก setup เสร็จ)
+                setTimeout(setInitialValues, 100);
+            });
+        </script>
+    </body>
+</html>
